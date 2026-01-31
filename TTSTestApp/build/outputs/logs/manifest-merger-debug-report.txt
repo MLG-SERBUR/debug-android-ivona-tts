@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:2:1-22:12
-INJECTED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:2:1-22:12
-INJECTED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:2:1-22:12
-INJECTED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:2:1-22:12
+ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:2:1-23:12
+INJECTED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:2:1-23:12
+INJECTED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:2:1-23:12
+INJECTED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:2:1-23:12
 MERGED from [com.google.android.material:material:1.11.0] /home/codespace/.gradle/caches/8.13/transforms/83579ea2b9b33a59004688a2825c8013/transformed/material-1.11.0/AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] /home/codespace/.gradle/caches/8.13/transforms/36c1cefed8c7d22afbb329dd626e5adf/transformed/constraintlayout-2.1.4/AndroidManifest.xml:2:1-11:12
 MERGED from [androidx.appcompat:appcompat-resources:1.6.1] /home/codespace/.gradle/caches/8.13/transforms/0e6ccd456dd61d487e2b0a1d423e1767/transformed/jetified-appcompat-resources-1.6.1/AndroidManifest.xml:17:1-22:12
@@ -62,8 +62,8 @@ ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:
 	android:name
 		ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:4:22-64
 application
-ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:6:5-20:19
-INJECTED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:6:5-20:19
+ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:6:5-21:19
+INJECTED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:6:5-21:19
 MERGED from [com.google.android.material:material:1.11.0] /home/codespace/.gradle/caches/8.13/transforms/83579ea2b9b33a59004688a2825c8013/transformed/material-1.11.0/AndroidManifest.xml:22:5-20
 MERGED from [com.google.android.material:material:1.11.0] /home/codespace/.gradle/caches/8.13/transforms/83579ea2b9b33a59004688a2825c8013/transformed/material-1.11.0/AndroidManifest.xml:22:5-20
 MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] /home/codespace/.gradle/caches/8.13/transforms/36c1cefed8c7d22afbb329dd626e5adf/transformed/constraintlayout-2.1.4/AndroidManifest.xml:9:5-20
@@ -90,22 +90,24 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] /home/codespace/.gradle/cac
 		ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:8:9-41
 	android:allowBackup
 		ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:7:9-35
+	android:theme
+		ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:10:9-40
 activity#com.example.ttstest.MainActivity
-ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:11:9-18:20
+ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:12:9-19:20
 	android:exported
-		ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:13:13-36
+		ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:14:13-36
 	android:name
-		ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:12:13-41
+		ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:13:13-41
 intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
-ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:14:13-17:29
+ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:15:13-18:29
 action#android.intent.action.MAIN
-ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:15:17-69
+ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:16:17-69
 	android:name
-		ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:15:25-66
+		ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:16:25-66
 category#android.intent.category.LAUNCHER
-ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:16:17-77
+ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:17:17-77
 	android:name
-		ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:16:27-74
+		ADDED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml:17:27-74
 uses-sdk
 INJECTED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /workspaces/codespaces-blank/TTSTestApp/src/main/AndroidManifest.xml

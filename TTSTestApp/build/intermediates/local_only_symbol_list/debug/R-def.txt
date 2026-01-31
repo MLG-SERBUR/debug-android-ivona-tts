@@ -6,3 +6,4 @@ id btn_tts_service_context
 id status_text
 layout activity_main
 string app_name
+style AppTheme

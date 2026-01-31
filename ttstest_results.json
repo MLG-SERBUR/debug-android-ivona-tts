@@ -1,0 +1,65 @@
+{
+  "apk_exists": true,
+  "apk_valid_zip": true,
+  "apk_size_mb": 5.48,
+  "main_activity_present": false,
+  "layout_files": 118,
+  "resource_files": 823,
+  "manifest_valid": false,
+  "dex_files": [
+    {
+      "name": "classes.dex",
+      "size_mb": 9.5,
+      "valid": true
+    },
+    {
+      "name": "classes2.dex",
+      "size_mb": 0.49,
+      "valid": true
+    },
+    {
+      "name": "classes3.dex",
+      "size_mb": 0.01,
+      "valid": true
+    }
+  ],
+  "build_success": true,
+  "all_tests_passed": false,
+  "tests": [
+    {
+      "name": "APK File Exists",
+      "passed": true,
+      "details": "APK size: 5.48MB"
+    },
+    {
+      "name": "ZIP Integrity",
+      "passed": true,
+      "details": "Contains 885 files"
+    },
+    {
+      "name": "Manifest Validation",
+      "passed": false,
+      "details": "Some elements missing"
+    },
+    {
+      "name": "DEX Files",
+      "passed": true,
+      "details": "Found 3 valid DEX files"
+    },
+    {
+      "name": "Resource Files",
+      "passed": true,
+      "details": "118 layouts, 823 total resources"
+    },
+    {
+      "name": "App Classes Bytecode",
+      "passed": true,
+      "details": "Found 5 key classes"
+    },
+    {
+      "name": "Build Configuration",
+      "passed": true,
+      "details": "All build settings correct"
+    }
+  ]
+}

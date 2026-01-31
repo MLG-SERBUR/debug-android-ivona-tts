@@ -1,0 +1,8 @@
+R_DEF: Internal format may change without notice
+local
+id btn_test_speak
+id btn_tts_app_context
+id btn_tts_service_context
+id status_text
+layout activity_main
+string app_name

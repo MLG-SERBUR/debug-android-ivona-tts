@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="TTS Test App"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="24dp" />
+
+    <Button
+        android:id="@+id/btn_tts_app_context"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Test: App Context TTS"
+        android:layout_marginBottom="12dp"
+        android:padding="16dp" />
+
+    <Button
+        android:id="@+id/btn_tts_service_context"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Test: Activity Context TTS"
+        android:layout_marginBottom="12dp"
+        android:padding="16dp" />
+
+    <Button
+        android:id="@+id/btn_test_speak"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Test: Speak"
+        android:layout_marginBottom="24dp"
+        android:padding="16dp" />
+
+    <TextView
+        android:id="@+id/status_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Status: Ready"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:minHeight="60dp" />
+
+</LinearLayout>

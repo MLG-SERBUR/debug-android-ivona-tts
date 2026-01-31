@@ -1,0 +1,44 @@
+DIRECT GITHUB LINKS TO KEY CODE SECTIONS
+==========================================
+
+📍 SpeakThat - TTS Initialization Problem (Service Context)
+   https://github.com/mitchib1440/SpeakThat/blob/main/app/src/main/java/com/micoyc/speakthat/NotificationReaderService.kt#L1076-L1116
+
+📍 SpeakThat - Custom Engine Package Handling
+   https://github.com/mitchib1440/SpeakThat/blob/main/app/src/main/java/com/micoyc/speakthat/NotificationReaderService.kt#L1107-L1116
+
+📍 SpeakThat - speak() Call for Notifications
+   https://github.com/mitchib1440/SpeakThat/blob/main/app/src/main/java/com/micoyc/speakthat/NotificationReaderService.kt#L5034-L5040
+
+📍 SpeakThat - In-App TTS Init (Works with Ivona)
+   https://github.com/mitchib1440/SpeakThat/blob/main/app/src/main/java/com/micoyc/speakthat/MainActivity.kt#L556-L588
+
+📍 VoiceNotify - TTS Initialization (Application Context - Works!)
+   https://github.com/pilot51/voicenotify/blob/main/app/src/main/java/com/pilot51/voicenotify/Service.kt#L146-L174
+
+📍 VoiceNotify - TTS speak() Call
+   https://github.com/pilot51/voicenotify/blob/main/app/src/main/java/com/pilot51/voicenotify/Service.kt#L448-L450
+
+📍 VoiceNotify - TTS Queue Data Structure
+   https://github.com/pilot51/voicenotify/blob/main/app/src/main/java/com/pilot51/voicenotify/Service.kt#L128
+
+📍 Repro Project - NotificationListenerService
+   https://github.com/mitchib1440/SpeakThat/blob/main/ttsrepro/src/main/java/com/micoyc/ttsrepro/ReproNotificationService.kt
+
+📍 Repro Project - Manifest with Permissions
+   https://github.com/mitchib1440/SpeakThat/blob/main/ttsrepro/src/main/AndroidManifest.xml
+
+================================================================================
+
+KEY DIFFERENCE IN ONE LINE
+
+SpeakThat (FAILS with Ivona from notification service):
+  textToSpeech = TextToSpeech(this, this, selectedEngine)
+
+VoiceNotify (WORKS with Ivona):
+  tts = TextToSpeech(appContext, OnInitListener { status -> ... })
+
+THE FIX:
+  Change "this" to "applicationContext" in SpeakThat's NotificationReaderService
+
+================================================================================

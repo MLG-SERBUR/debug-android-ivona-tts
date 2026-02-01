@@ -84,6 +84,36 @@ class MainActivity : AppCompatActivity() {
             setOnClickListener { triggerServiceTest(TestNotificationService.TEST_3ARG_IVONA) }
         }
 
+        val btnServiceAppCtx2Arg = Button(this).apply {
+            text = "Service: Test 2-arg (ApplicationContext)"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_APP_CONTEXT_2ARG) }
+        }
+
+        val btnServiceAppCtx3Arg = Button(this).apply {
+            text = "Service: Test 3-arg Ivona (ApplicationContext)"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_APP_CONTEXT_3ARG) }
+        }
+
+        val btnServiceQueueAdd = Button(this).apply {
+            text = "Service: Test QUEUE_ADD Mode"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_QUEUE_ADD) }
+        }
+
+        val btnServiceBundleParams = Button(this).apply {
+            text = "Service: Test Bundle Parameters"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_BUNDLE_PARAMS) }
+        }
+
+        val btnServiceEngineVerify = Button(this).apply {
+            text = "Service: Test Engine Verification"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_ENGINE_VERIFICATION) }
+        }
+
+        val btnServiceForegroundListener = Button(this).apply {
+            text = "Service: Foreground Service + Listener (CRITICAL)"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_FOREGROUND_SERVICE_LISTENER) }
+        }
+
         val btnListEngines = Button(this).apply {
             text = "List All TTS Engines"
             setOnClickListener { listAllTtsEngines() }
@@ -101,6 +131,12 @@ class MainActivity : AppCompatActivity() {
         container.addView(btnSendNotification)
         container.addView(btnServiceTest2Arg)
         container.addView(btnServiceTest3Arg)
+        container.addView(btnServiceAppCtx2Arg)
+        container.addView(btnServiceAppCtx3Arg)
+        container.addView(btnServiceQueueAdd)
+        container.addView(btnServiceBundleParams)
+        container.addView(btnServiceEngineVerify)
+        container.addView(btnServiceForegroundListener)
         container.addView(btnListEngines)
         container.addView(btnClearLog)
         container.addView(logTextView)

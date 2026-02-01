@@ -114,6 +114,31 @@ class MainActivity : AppCompatActivity() {
             setOnClickListener { triggerServiceTest(TestNotificationService.TEST_FOREGROUND_SERVICE_LISTENER) }
         }
 
+        val btnServiceLanguageAvail = Button(this).apply {
+            text = "Service: Language Availability Check"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_LANGUAGE_AVAILABILITY) }
+        }
+
+        val btnServiceAudioUsage = Button(this).apply {
+            text = "Service: Audio Attributes USAGE Types"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_AUDIO_ATTRIBUTES_USAGE) }
+        }
+
+        val btnServiceSpeechSettings = Button(this).apply {
+            text = "Service: Speech Rate & Pitch"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_SPEECH_RATE_PITCH) }
+        }
+
+        val btnServiceRecovery = Button(this).apply {
+            text = "Service: TTS Recovery Pattern"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_RECOVERY_PATTERN) }
+        }
+
+        val btnServiceMultipleUsage = Button(this).apply {
+            text = "Service: Multiple USAGE Types"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_MULTIPLE_USAGE_TYPES) }
+        }
+
         val btnListEngines = Button(this).apply {
             text = "List All TTS Engines"
             setOnClickListener { listAllTtsEngines() }
@@ -137,6 +162,11 @@ class MainActivity : AppCompatActivity() {
         container.addView(btnServiceBundleParams)
         container.addView(btnServiceEngineVerify)
         container.addView(btnServiceForegroundListener)
+        container.addView(btnServiceLanguageAvail)
+        container.addView(btnServiceAudioUsage)
+        container.addView(btnServiceSpeechSettings)
+        container.addView(btnServiceRecovery)
+        container.addView(btnServiceMultipleUsage)
         container.addView(btnListEngines)
         container.addView(btnClearLog)
         container.addView(logTextView)

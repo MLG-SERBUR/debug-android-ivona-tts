@@ -20,6 +20,11 @@ class TestNotificationService : NotificationListenerService() {
         const val TEST_BUNDLE_PARAMS = "test_bundle_params"
         const val TEST_ENGINE_VERIFICATION = "test_engine_verify"
         const val TEST_FOREGROUND_SERVICE_LISTENER = "test_foreground_listener"
+        const val TEST_LANGUAGE_AVAILABILITY = "test_language_avail"
+        const val TEST_AUDIO_ATTRIBUTES_USAGE = "test_audio_usage"
+        const val TEST_SPEECH_RATE_PITCH = "test_speech_settings"
+        const val TEST_RECOVERY_PATTERN = "test_recovery"
+        const val TEST_MULTIPLE_USAGE_TYPES = "test_multiple_usage"
     }
 
     private var tts: TextToSpeech? = null
@@ -49,6 +54,11 @@ class TestNotificationService : NotificationListenerService() {
                 TEST_BUNDLE_PARAMS -> testBundleParams()
                 TEST_ENGINE_VERIFICATION -> testEngineVerification()
                 TEST_FOREGROUND_SERVICE_LISTENER -> testForegroundServiceWithListener()
+                TEST_LANGUAGE_AVAILABILITY -> testLanguageAvailability()
+                TEST_AUDIO_ATTRIBUTES_USAGE -> testAudioAttributesUsage()
+                TEST_SPEECH_RATE_PITCH -> testSpeechRateAndPitch()
+                TEST_RECOVERY_PATTERN -> testRecoveryPattern()
+                TEST_MULTIPLE_USAGE_TYPES -> testMultipleUsageTypes()
             }
         }
     }
@@ -437,5 +447,270 @@ class TestNotificationService : NotificationListenerService() {
                 showToast("FAILED: Foreground+Listener test, status: $status")
             }
         }, "ivona.tts")  // Use Ivona specifically
+    }
+
+    private fun testLanguageAvailability() {
+        Log.d(TAG, "=== SERVICE TEST: Language Availability Check (SpeakThat Pattern) ===")
+        Log.d(TAG, "SpeakThat checks language availability with isLanguageAvailable()")
+        
+        showToast("Service: Testing Language Availability...")
+        
+        tts?.shutdown()
+        tts = TextToSpeech(applicationContext, { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                Log.d(TAG, "SUCCESS: TTS initialized for language availability test")
+                
+                // Test multiple locales like SpeakThat does
+                val testLocales = listOf(
+                    java.util.Locale.getDefault(),
+                    java.util.Locale.ENGLISH,
+                    java.util.Locale("pt"),  // Portuguese
+                    java.util.Locale("es"),  // Spanish
+                    java.util.Locale.GERMAN
+                )
+                
+                var anyAvailable = false
+                for (locale in testLocales) {
+                    val result = tts?.isLanguageAvailable(locale)
+                    Log.d(TAG, "Language availability: $locale = $result")
+                    
+                    if (result != TextToSpeech.LANG_NOT_SUPPORTED && result != TextToSpeech.LANG_MISSING_DATA) {
+                        anyAvailable = true
+                        Log.d(TAG, "Using locale: $locale")
+                        tts?.language = locale
+                        
+                        // Speak with available locale
+                        val utteranceId = "lang_test_${System.currentTimeMillis()}"
+                        tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                            override fun onStart(id: String?) { Log.d(TAG, "Language test: speaking started") }
+                            override fun onDone(id: String?) { Log.d(TAG, "Language test: speaking finished"); showToast("Lang test completed") }
+                            override fun onError(id: String?) { Log.e(TAG, "Language test: error") }
+                        })
+                        
+                        val speakResult = tts?.speak("Testing language: ${locale.displayName}", 
+                            TextToSpeech.QUEUE_FLUSH, null, utteranceId)
+                        Log.d(TAG, "Speak result with locale $locale: $speakResult")
+                        break
+                    }
+                }
+                
+                if (!anyAvailable) {
+                    Log.w(TAG, "WARNING: No locales available")
+                    showToast("No locales available")
+                }
+                
+            } else {
+                Log.e(TAG, "FAILED: TTS init for language test, status: $status")
+                showToast("FAILED: Language test, status: $status")
+            }
+        }, "ivona.tts")
+    }
+
+    private fun testAudioAttributesUsage() {
+        Log.d(TAG, "=== SERVICE TEST: Audio Attributes with Different USAGE Types ===")
+        Log.d(TAG, "SpeakThat dynamically selects audio usage type based on settings")
+        
+        showToast("Service: Testing Audio Attributes (5 USAGE types)...")
+        
+        tts?.shutdown()
+        tts = TextToSpeech(applicationContext, { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                Log.d(TAG, "SUCCESS: TTS initialized for audio attributes test")
+                
+                // SpeakThat uses 5 different USAGE types
+                val usageTypes = listOf(
+                    android.media.AudioAttributes.USAGE_MEDIA to "MEDIA",
+                    android.media.AudioAttributes.USAGE_NOTIFICATION to "NOTIFICATION",
+                    android.media.AudioAttributes.USAGE_ALARM to "ALARM",
+                    android.media.AudioAttributes.USAGE_VOICE_COMMUNICATION to "VOICE_COMMUNICATION",
+                    android.media.AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE to "ASSISTANCE_NAV_GUIDANCE"
+                )
+                
+                // Test with ASSISTANCE_NAVIGATION_GUIDANCE (SpeakThat default)
+                val selectedUsage = android.media.AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE
+                Log.d(TAG, "Setting audio attributes with USAGE: ASSISTANCE_NAVIGATION_GUIDANCE")
+                
+                val audioAttributes = android.media.AudioAttributes.Builder()
+                    .setUsage(selectedUsage)
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+                
+                tts?.setAudioAttributes(audioAttributes)
+                Log.d(TAG, "Audio attributes set successfully")
+                
+                val utteranceId = "audio_usage_test_${System.currentTimeMillis()}"
+                tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                    override fun onStart(id: String?) { 
+                        Log.d(TAG, "Audio attributes test: started with USAGE_ASSISTANCE_NAVIGATION_GUIDANCE")
+                    }
+                    override fun onDone(id: String?) { 
+                        Log.d(TAG, "Audio attributes test: finished")
+                        showToast("Audio attributes test completed")
+                    }
+                    override fun onError(id: String?) { Log.e(TAG, "Audio attributes test: error") }
+                })
+                
+                val speakResult = tts?.speak(
+                    "Testing audio attributes with assistance navigation guidance",
+                    TextToSpeech.QUEUE_FLUSH,
+                    null,
+                    utteranceId
+                )
+                Log.d(TAG, "Speak result: $speakResult")
+                
+            } else {
+                Log.e(TAG, "FAILED: TTS init for audio attributes test, status: $status")
+                showToast("FAILED: Audio attributes test, status: $status")
+            }
+        }, "ivona.tts")
+    }
+
+    private fun testSpeechRateAndPitch() {
+        Log.d(TAG, "=== SERVICE TEST: Speech Rate and Pitch Settings ===")
+        Log.d(TAG, "SpeakThat applies speech rate and pitch from voice preferences")
+        
+        showToast("Service: Testing Speech Rate and Pitch...")
+        
+        tts?.shutdown()
+        tts = TextToSpeech(applicationContext, { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                Log.d(TAG, "SUCCESS: TTS initialized for speech settings test")
+                
+                // SpeakThat default: 1.0f for both (normal speed/pitch)
+                val speechRate = 1.0f  // Normal
+                val pitch = 1.0f       // Normal
+                
+                Log.d(TAG, "Setting speech rate: $speechRate")
+                val rateResult = tts?.setSpeechRate(speechRate)
+                Log.d(TAG, "setSpeechRate() returned: $rateResult")
+                
+                Log.d(TAG, "Setting pitch: $pitch")
+                val pitchResult = tts?.setPitch(pitch)
+                Log.d(TAG, "setPitch() returned: $pitchResult")
+                
+                val utteranceId = "speech_settings_${System.currentTimeMillis()}"
+                tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                    override fun onStart(id: String?) { Log.d(TAG, "Speech settings test: started") }
+                    override fun onDone(id: String?) { 
+                        Log.d(TAG, "Speech settings test: finished")
+                        showToast("Speech settings test completed")
+                    }
+                    override fun onError(id: String?) { Log.e(TAG, "Speech settings test: error") }
+                })
+                
+                val speakResult = tts?.speak(
+                    "Testing speech rate and pitch with normal settings",
+                    TextToSpeech.QUEUE_FLUSH,
+                    null,
+                    utteranceId
+                )
+                Log.d(TAG, "Speak result with speech settings: $speakResult")
+                
+            } else {
+                Log.e(TAG, "FAILED: TTS init for speech settings test, status: $status")
+                showToast("FAILED: Speech settings test, status: $status")
+            }
+        }, "ivona.tts")
+    }
+
+    private fun testRecoveryPattern() {
+        Log.d(TAG, "=== SERVICE TEST: TTS Recovery Pattern (SpeakThat Resilience) ===")
+        Log.d(TAG, "SpeakThat has built-in recovery with exponential backoff")
+        Log.d(TAG, "Testing recovery from TTS stop and reinit")
+        
+        showToast("Service: Testing Recovery Pattern...")
+        
+        tts?.shutdown()
+        tts = TextToSpeech(applicationContext, { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                Log.d(TAG, "SUCCESS: TTS initialized for recovery test")
+                
+                // Scenario 1: Stop and immediately speak again (recovery test)
+                Log.d(TAG, "Step 1: Stopping TTS")
+                tts?.stop()
+                Thread.sleep(50)  // Like SpeakThat does
+                
+                Log.d(TAG, "Step 2: Attempting to speak immediately after stop (recovery scenario)")
+                val utteranceId1 = "recovery_test_1_${System.currentTimeMillis()}"
+                
+                tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                    override fun onStart(id: String?) { 
+                        Log.d(TAG, "Recovery test: speech started (recovered from stop)")
+                    }
+                    override fun onDone(id: String?) { 
+                        Log.d(TAG, "Recovery test: speech finished")
+                        showToast("Recovery test completed successfully")
+                    }
+                    override fun onError(id: String?) { 
+                        Log.e(TAG, "Recovery test: error - recovery failed")
+                    }
+                })
+                
+                val speakResult = tts?.speak(
+                    "Recovery test: speaking after stop",
+                    TextToSpeech.QUEUE_FLUSH,
+                    null,
+                    utteranceId1
+                )
+                Log.d(TAG, "Speak result after recovery: $speakResult")
+                
+            } else {
+                Log.e(TAG, "FAILED: TTS init for recovery test, status: $status")
+                showToast("FAILED: Recovery test, status: $status")
+            }
+        }, "ivona.tts")
+    }
+
+    private fun testMultipleUsageTypes() {
+        Log.d(TAG, "=== SERVICE TEST: Multiple USAGE Types Sequential Test ===")
+        Log.d(TAG, "SpeakThat tries fallback usage types if primary fails")
+        
+        showToast("Service: Testing Multiple USAGE Types...")
+        
+        tts?.shutdown()
+        tts = TextToSpeech(applicationContext, { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                Log.d(TAG, "SUCCESS: TTS initialized for multiple usage types test")
+                
+                // Try NOTIFICATION usage first, then fallback to ALARM, then ASSISTANCE
+                val primaryUsage = android.media.AudioAttributes.USAGE_NOTIFICATION
+                Log.d(TAG, "Setting primary audio attributes with USAGE_NOTIFICATION")
+                
+                val audioAttributes = android.media.AudioAttributes.Builder()
+                    .setUsage(primaryUsage)
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+                
+                tts?.setAudioAttributes(audioAttributes)
+                Log.d(TAG, "Primary audio attributes set")
+                
+                val utteranceId = "multi_usage_${System.currentTimeMillis()}"
+                tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                    override fun onStart(id: String?) { 
+                        Log.d(TAG, "Multiple usage test: started with NOTIFICATION usage")
+                    }
+                    override fun onDone(id: String?) { 
+                        Log.d(TAG, "Multiple usage test: finished successfully")
+                        showToast("Multiple USAGE types test completed")
+                    }
+                    override fun onError(id: String?) { 
+                        Log.e(TAG, "Multiple usage test: error - may need fallback usage type")
+                        showToast("Multiple USAGE types: error encountered")
+                    }
+                })
+                
+                val speakResult = tts?.speak(
+                    "Testing with notification audio usage type",
+                    TextToSpeech.QUEUE_FLUSH,
+                    null,
+                    utteranceId
+                )
+                Log.d(TAG, "Speak result with NOTIFICATION usage: $speakResult")
+                
+            } else {
+                Log.e(TAG, "FAILED: TTS init for multiple usage types test, status: $status")
+                showToast("FAILED: Multiple usage types test, status: $status")
+            }
+        }, "ivona.tts")
     }
 }

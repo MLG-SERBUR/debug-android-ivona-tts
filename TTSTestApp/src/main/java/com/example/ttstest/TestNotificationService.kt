@@ -13,7 +13,7 @@ class TestNotificationService : NotificationListenerService() {
     companion object {
         private const val TAG = "TestNotificationSvc"
         const val TEST_2ARG = "test_2arg"
-        const val TEST_3ARG_IVONA = "test_3arg_ivona"
+        const val TEST_3ARG = "test_3arg"
         const val TEST_APP_CONTEXT_2ARG = "test_app_ctx_2arg"
         const val TEST_APP_CONTEXT_3ARG = "test_app_ctx_3arg"
         const val TEST_QUEUE_ADD = "test_queue_add"
@@ -64,10 +64,10 @@ class TestNotificationService : NotificationListenerService() {
             prefs.edit().remove("pending_test").apply()
             
             when (pendingTest) {
-                TEST_2ARG -> test2ArgTtsFromService()
-                TEST_3ARG_IVONA -> test3ArgTtsFromService()
+                TEST_2ARG -> test2ArgTts()
+                TEST_3ARG -> test3ArgTtsFromService()
                 TEST_APP_CONTEXT_2ARG -> testAppContextTts2Arg()
-                TEST_APP_CONTEXT_3ARG -> testAppContextTts3ArgIvona()
+                TEST_APP_CONTEXT_3ARG -> testAppContextTts3Arg()
                 TEST_QUEUE_ADD -> testQueueAddMode()
                 TEST_BUNDLE_PARAMS -> testBundleParams()
                 TEST_ENGINE_VERIFICATION -> testEngineVerification()
@@ -94,6 +94,23 @@ class TestNotificationService : NotificationListenerService() {
     }
 
     // ... (existing helper methods)
+
+    private fun test2ArgTts() {
+        Log.d(TAG, "=== SERVICE TEST: 2-arg TTS (Service Context) ===")
+        showToast("Service: Testing 2-arg TTS...")
+        
+        tts?.shutdown()
+        tts = TextToSpeech(this) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                Log.d(TAG, "SUCCESS: 2-arg TTS initialized")
+                showToast("SUCCESS: 2-arg TTS from Service")
+                speakFromService("2-arg service test successful")
+            } else {
+                Log.e(TAG, "FAILED: 2-arg TTS init, status: $status")
+                showToast("FAILED: 2-arg init, status: $status")
+            }
+        }
+    }
 
     private fun testSpeakThatExactPattern() {
         Log.d(TAG, "=== SERVICE TEST: SpeakThat Exact Pattern ===")
@@ -1201,7 +1218,6 @@ class TestNotificationService : NotificationListenerService() {
             TextToSpeech(applicationContext, listener)
         }
     }
-    }
 
     private fun testLanguageAvailability() {
         Log.d(TAG, "=== SERVICE TEST: Language Availability Check (SpeakThat Pattern) ===")
@@ -1265,7 +1281,6 @@ class TestNotificationService : NotificationListenerService() {
         } else {
             TextToSpeech(applicationContext, listener)
         }
-    }
     }
 
     private fun testAudioAttributesUsage() {
@@ -1333,7 +1348,6 @@ class TestNotificationService : NotificationListenerService() {
             TextToSpeech(applicationContext, listener)
         }
     }
-    }
 
     private fun testSpeechRateAndPitch() {
         Log.d(TAG, "=== SERVICE TEST: Speech Rate and Pitch Settings ===")
@@ -1389,7 +1403,6 @@ class TestNotificationService : NotificationListenerService() {
             TextToSpeech(applicationContext, listener)
         }
     }
-    }
 
     private fun testRecoveryPattern() {
         Log.d(TAG, "=== SERVICE TEST: TTS Recovery Pattern (SpeakThat Resilience) ===")
@@ -1444,7 +1457,6 @@ class TestNotificationService : NotificationListenerService() {
         } else {
             TextToSpeech(applicationContext, listener)
         }
-    }
     }
 
     private fun testMultipleUsageTypes() {
@@ -1505,6 +1517,5 @@ class TestNotificationService : NotificationListenerService() {
         } else {
             TextToSpeech(applicationContext, listener)
         }
-    }
     }
 }

@@ -55,8 +55,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         val btn3ArgActivity = Button(this).apply {
-            text = "Test 3-arg TTS with Ivona (Activity)"
-            setOnClickListener { test3ArgFromActivityWithIvona() }
+            text = "Test 3-arg TTS (Activity)"
+            setOnClickListener { test3ArgFromActivity() }
         }
 
         val btnCheckPermission = Button(this).apply {
@@ -80,8 +80,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         val btnServiceTest3Arg = Button(this).apply {
-            text = "Service: Test 3-arg TTS (Ivona)"
-            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_3ARG_IVONA) }
+            text = "Service: Test 3-arg TTS"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_3ARG) }
         }
 
         val btnServiceAppCtx2Arg = Button(this).apply {
@@ -90,7 +90,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         val btnServiceAppCtx3Arg = Button(this).apply {
-            text = "Service: Test 3-arg Ivona (ApplicationContext)"
+            text = "Service: Test 3-arg (ApplicationContext)"
             setOnClickListener { triggerServiceTest(TestNotificationService.TEST_APP_CONTEXT_3ARG) }
         }
 
@@ -179,6 +179,24 @@ class MainActivity : AppCompatActivity() {
             setOnClickListener { triggerServiceTest(TestNotificationService.TEST_TTS_RECOVERY_PATTERN) }
         }
 
+        val btnServicePrematureRecovery = Button(this).apply {
+            text = "Service: Premature Recovery (SpeakThat Logic)"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_PREMATURE_RECOVERY) }
+        }
+
+        val btnToggleEngine = Button(this).apply {
+            val prefs = getSharedPreferences("debug_prefs", Context.MODE_PRIVATE)
+            var useIvona = prefs.getBoolean("use_ivona", false)
+            text = if (useIvona) "Using: IVONA" else "Using: DEFAULT"
+            
+            setOnClickListener {
+                useIvona = !useIvona
+                prefs.edit().putBoolean("use_ivona", useIvona).apply()
+                text = if (useIvona) "Using: IVONA" else "Using: DEFAULT"
+                showToast("Engine changed to ${if (useIvona) "Ivona" else "Default"}")
+            }
+        }
+
         val btnServiceListenerAfter = Button(this).apply {
             text = "Service: Listener AFTER speak()"
             setOnClickListener { triggerServiceTest(TestNotificationService.TEST_LISTENER_AFTER_SPEAK) }
@@ -230,6 +248,8 @@ class MainActivity : AppCompatActivity() {
         container.addView(btnServiceStopBeforeSpeak)
         container.addView(btnServiceReapplySettings)
         container.addView(btnServiceRecoveryPattern)
+        container.addView(btnServicePrematureRecovery)
+        container.addView(btnToggleEngine)
         container.addView(btnServiceListenerAfter)
         container.addView(btnServiceVolumeBundle)
         container.addView(btnServiceSpeakThatClone)
@@ -275,18 +295,27 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun test3ArgFromActivityWithIvona() {
-        log("--- TEST: 3-arg TTS with Ivona from Activity ---")
-        val ivonaPackage = "ivona.tts"
+    private fun test3ArgFromActivity() {
+        Log.d(TAG, "--- TEST: 3-arg TTS with Selected Engine from Activity ---")
+        val enginePackage = getEnginePackage()
+        
+        log("Creating TTS with: TextToSpeech(this, listener, \"${enginePackage ?: "default"}\")")
+        
         activityTts3Arg?.shutdown()
-        activityTts3Arg = TextToSpeech(this, { status ->
+        val listener = TextToSpeech.OnInitListener { status ->
             if (status == TextToSpeech.SUCCESS) {
-                log("SUCCESS: 3-arg TTS (Ivona) initialized")
-                speakTest(activityTts3Arg, "3-arg Ivona Activity test")
+                log("SUCCESS: 3-arg TTS initialized")
+                speakTest(activityTts3Arg, "3-arg Activity test")
             } else {
-                log("FAILED: 3-arg TTS (Ivona) init status: $status")
+                log("FAILED: 3-arg TTS init status: $status")
             }
-        }, ivonaPackage)
+        }
+
+        activityTts3Arg = if (enginePackage != null) {
+            TextToSpeech(this, listener, enginePackage)
+        } else {
+            TextToSpeech(this, listener)
+        }
     }
 
     private fun speakTest(tts: TextToSpeech?, label: String) {
@@ -364,6 +393,16 @@ class MainActivity : AppCompatActivity() {
                 tempTts?.shutdown()
             }
         }
+    }
+
+    private fun getEnginePackage(): String? {
+        val prefs = getSharedPreferences("debug_prefs", Context.MODE_PRIVATE)
+        val useIvona = prefs.getBoolean("use_ivona", false)
+        return if (useIvona) "ivona.tts" else null
+    }
+
+    private fun showToast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
     override fun onDestroy() {

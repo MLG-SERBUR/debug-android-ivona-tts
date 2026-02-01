@@ -36,6 +36,13 @@ class TestNotificationService : NotificationListenerService() {
         const val TEST_LISTENER_AFTER_SPEAK = "test_listener_after_speak"
         const val TEST_VOLUME_BUNDLE = "test_volume_bundle"
         const val TEST_LISTENER_AFTER_SPEAK_WITH_BUNDLE = "test_listener_after_speak_with_bundle"
+        const val TEST_PREMATURE_RECOVERY = "test_premature_recovery"
+    }
+
+    private fun getEnginePackage(): String? {
+        val prefs = getSharedPreferences("debug_prefs", Context.MODE_PRIVATE)
+        val useIvona = prefs.getBoolean("use_ivona", false)
+        return if (useIvona) "ivona.tts" else null
     }
 
     private var tts: TextToSpeech? = null
@@ -81,6 +88,7 @@ class TestNotificationService : NotificationListenerService() {
                 TEST_LISTENER_AFTER_SPEAK -> testListenerAfterSpeak()
                 TEST_VOLUME_BUNDLE -> testVolumeBundle()
                 TEST_LISTENER_AFTER_SPEAK_WITH_BUNDLE -> testListenerAfterSpeakWithBundle()
+                TEST_PREMATURE_RECOVERY -> testPrematureRecovery()
             }
         }
     }
@@ -89,7 +97,8 @@ class TestNotificationService : NotificationListenerService() {
 
     private fun testSpeakThatExactPattern() {
         Log.d(TAG, "=== SERVICE TEST: SpeakThat Exact Pattern ===")
-        Log.d(TAG, "Replicating: TextToSpeech(this, listener, \"ivona.tts\")")
+        val enginePackage = getEnginePackage()
+        Log.d(TAG, "Replicating: TextToSpeech(this, listener, \"${enginePackage ?: "default"}\")")
         Log.d(TAG, "AND running on MAIN THREAD (like SpeakThat onCreate)")
         Log.d(TAG, "AND setting usage to USAGE_ASSISTANT in onInit")
 
@@ -101,10 +110,8 @@ class TestNotificationService : NotificationListenerService() {
             Log.d(TAG, "Initializing TTS on Thread: ${Thread.currentThread().name}")
             
             tts?.shutdown()
-            val ivonaPackage = "ivona.tts"
             
-            // Use 'this' (Service) as context, and explicit package
-            tts = TextToSpeech(this, { status ->
+            val listener = TextToSpeech.OnInitListener { status ->
                 Log.d(TAG, "onInit callback received on Thread: ${Thread.currentThread().name}")
                 if (status == TextToSpeech.SUCCESS) {
                     Log.d(TAG, "SUCCESS: TTS init (SpeakThat pattern)")
@@ -138,7 +145,13 @@ class TestNotificationService : NotificationListenerService() {
                     Log.e(TAG, "FAILED: TTS init (SpeakThat pattern), status: $status")
                     showToast("FAILED: SpeakThat Pattern init, status: $status")
                 }
-            }, ivonaPackage)
+            }
+
+            tts = if (enginePackage != null) {
+                TextToSpeech(this, listener, enginePackage)
+            } else {
+                TextToSpeech(this, listener)
+            }
         }
     }
 
@@ -147,10 +160,10 @@ class TestNotificationService : NotificationListenerService() {
         Log.d(TAG, "Targeting specifically USAGE_ASSISTANT (16) which SpeakThat uses")
         
         showToast("Service: Testing USAGE_ASSISTANT...")
-        val ivonaPackage = "ivona.tts"
+        val enginePackage = getEnginePackage()
         
         tts?.shutdown()
-        tts = TextToSpeech(this, { status ->
+        val listener = TextToSpeech.OnInitListener { status ->
             if (status == TextToSpeech.SUCCESS) {
                 Log.d(TAG, "SUCCESS: TTS initialized")
                 
@@ -176,7 +189,13 @@ class TestNotificationService : NotificationListenerService() {
             } else {
                 Log.e(TAG, "FAILED: TTS init, status: $status")
             }
-        }, ivonaPackage)
+        }
+
+        tts = if (enginePackage != null) {
+            TextToSpeech(this, listener, enginePackage)
+        } else {
+            TextToSpeech(this, listener)
+        }
     }
 
 
@@ -185,10 +204,10 @@ class TestNotificationService : NotificationListenerService() {
         Log.d(TAG, "This replicates SpeakThat's exact behavior that causes LANG_MISSING_DATA")
         
         showToast("Service: Testing explicit en_US language...")
-        val ivonaPackage = "ivona.tts"
+        val enginePackage = getEnginePackage()
         
         tts?.shutdown()
-        tts = TextToSpeech(this, { status ->
+        val listener = TextToSpeech.OnInitListener { status ->
             if (status == TextToSpeech.SUCCESS) {
                 Log.d(TAG, "SUCCESS: TTS initialized")
                 
@@ -250,7 +269,13 @@ class TestNotificationService : NotificationListenerService() {
                 Log.e(TAG, "FAILED: TTS init, status: $status")
                 showToast("TTS init failed: $status")
             }
-        }, ivonaPackage)
+        }
+
+        tts = if (enginePackage != null) {
+            TextToSpeech(this, listener, enginePackage)
+        } else {
+            TextToSpeech(this, listener)
+        }
     }
 
     private fun testLanguageAvailabilityCheck() {
@@ -258,10 +283,10 @@ class TestNotificationService : NotificationListenerService() {
         Log.d(TAG, "This is the CORRECT way to handle language setting")
         
         showToast("Service: Testing proper language availability check...")
-        val ivonaPackage = "ivona.tts"
+        val enginePackage = getEnginePackage()
         
         tts?.shutdown()
-        tts = TextToSpeech(this, { status ->
+        val listener = TextToSpeech.OnInitListener { status ->
             if (status == TextToSpeech.SUCCESS) {
                 Log.d(TAG, "SUCCESS: TTS initialized")
                 
@@ -305,7 +330,13 @@ class TestNotificationService : NotificationListenerService() {
                 Log.e(TAG, "FAILED: TTS init, status: $status")
                 showToast("TTS init failed: $status")
             }
-        }, ivonaPackage)
+        }
+
+        tts = if (enginePackage != null) {
+            TextToSpeech(this, listener, enginePackage)
+        } else {
+            TextToSpeech(this, listener)
+        }
     }
 
     private fun testSpeakThatExecutionPattern() {
@@ -314,10 +345,10 @@ class TestNotificationService : NotificationListenerService() {
         Log.d(TAG, "Sequence: stop() -> sleep(50ms) -> applyVoiceSettings() -> foreground -> sleep(100ms) -> speak()")
         
         showToast("Service: Testing SpeakThat COMPLETE execution pattern...")
-        val ivonaPackage = "ivona.tts"
+        val enginePackage = getEnginePackage()
         
         tts?.shutdown()
-        tts = TextToSpeech(this, { status ->
+        val listener = TextToSpeech.OnInitListener { status ->
             if (status == TextToSpeech.SUCCESS) {
                 Log.d(TAG, "SUCCESS: TTS initialized for execution pattern test")
                 
@@ -389,7 +420,13 @@ class TestNotificationService : NotificationListenerService() {
                 Log.e(TAG, "FAILED: TTS init, status: $status")
                 showToast("TTS init failed: $status")
             }
-        }, ivonaPackage)
+        }
+
+        tts = if (enginePackage != null) {
+            TextToSpeech(this, listener, enginePackage)
+        } else {
+            TextToSpeech(this, listener)
+        }
     }
 
     private fun testStopBeforeSpeak() {
@@ -397,10 +434,10 @@ class TestNotificationService : NotificationListenerService() {
         Log.d(TAG, "Testing if calling stop() on a fresh TTS instance causes issues")
         
         showToast("Service: Testing stop() before speak()...")
-        val ivonaPackage = "ivona.tts"
+        val enginePackage = getEnginePackage()
         
         tts?.shutdown()
-        tts = TextToSpeech(this, { status ->
+        val listener = TextToSpeech.OnInitListener { status ->
             if (status == TextToSpeech.SUCCESS) {
                 Log.d(TAG, "SUCCESS: TTS initialized")
                 
@@ -435,7 +472,13 @@ class TestNotificationService : NotificationListenerService() {
             } else {
                 Log.e(TAG, "FAILED: TTS init, status: $status")
             }
-        }, ivonaPackage)
+        }
+
+        tts = if (enginePackage != null) {
+            TextToSpeech(this, listener, enginePackage)
+        } else {
+            TextToSpeech(this, listener)
+        }
     }
 
     private fun testReapplySettingsBeforeSpeak() {
@@ -443,10 +486,10 @@ class TestNotificationService : NotificationListenerService() {
         Log.d(TAG, "Testing if reapplying settings before speak() causes issues")
         
         showToast("Service: Testing settings reapplication...")
-        val ivonaPackage = "ivona.tts"
+        val enginePackage = getEnginePackage()
         
         tts?.shutdown()
-        tts = TextToSpeech(this, { status ->
+        val listener = TextToSpeech.OnInitListener { status ->
             if (status == TextToSpeech.SUCCESS) {
                 Log.d(TAG, "SUCCESS: TTS initialized")
                 
@@ -491,7 +534,13 @@ class TestNotificationService : NotificationListenerService() {
             } else {
                 Log.e(TAG, "FAILED: TTS init, status: $status")
             }
-        }, ivonaPackage)
+        }
+
+        tts = if (enginePackage != null) {
+            TextToSpeech(this, listener, enginePackage)
+        } else {
+            TextToSpeech(this, listener)
+        }
     }
 
     private fun testTtsRecoveryPattern() {
@@ -500,15 +549,15 @@ class TestNotificationService : NotificationListenerService() {
         Log.d(TAG, "Bug: TTS recovery reinitializes WITHOUT the engine package!")
         
         showToast("Service: Testing TTS recovery pattern...")
-        val ivonaPackage = "ivona.tts"
+        val enginePackage = getEnginePackage()
         
         tts?.shutdown()
         
-        // STEP 1: Initialize with Ivona (like normal)
-        Log.d(TAG, "Step 1: Initializing TTS with Ivona package")
-        tts = TextToSpeech(this, { status ->
+        // STEP 1: Initialize with selected engine (like normal)
+        Log.d(TAG, "Step 1: Initializing TTS with selected engine: ${enginePackage ?: "default"}")
+        val listener = TextToSpeech.OnInitListener { status ->
             if (status == TextToSpeech.SUCCESS) {
-                Log.d(TAG, "  - SUCCESS: TTS initialized with Ivona")
+                Log.d(TAG, "  - SUCCESS: TTS initialized")
                 val engine1 = tts?.defaultEngine
                 Log.d(TAG, "  - Current engine: $engine1")
                 
@@ -542,7 +591,7 @@ class TestNotificationService : NotificationListenerService() {
                 // STEP 6: REINITIALIZE WITHOUT ENGINE PACKAGE (THE BUG - line 1237)
                 Log.d(TAG, "Step 6: Reinitializing TTS WITHOUT engine package (BUG!)")
                 Log.d(TAG, "  - SpeakThat does: TextToSpeech(this, this)")
-                Log.d(TAG, "  - This switches from Ivona to DEFAULT engine!")
+                Log.d(TAG, "  - This switches from selected engine to DEFAULT engine!")
                 
                 tts = TextToSpeech(this@TestNotificationService, { status2 ->
                     if (status2 == TextToSpeech.SUCCESS) {
@@ -554,7 +603,7 @@ class TestNotificationService : NotificationListenerService() {
                             Log.e(TAG, "  - ENGINE CHANGED! Was: $engine1, Now: $engine2")
                             showToast("BUG CONFIRMED: Engine switched from $engine1 to $engine2!")
                         } else {
-                            Log.w(TAG, "  - Engine stayed the same (unexpected)")
+                            Log.w(TAG, "  - Engine stayed the same")
                             showToast("Engine stayed same: $engine2")
                         }
                         
@@ -577,7 +626,13 @@ class TestNotificationService : NotificationListenerService() {
                 Log.e(TAG, "FAILED: Initial TTS init failed, status: $status")
                 showToast("Initial TTS init failed: $status")
             }
-        }, ivonaPackage) // Initial init specifies ivona
+        }
+
+        tts = if (enginePackage != null) {
+            TextToSpeech(this, listener, enginePackage)
+        } else {
+            TextToSpeech(this, listener)
+        }
     }
 
     private fun testListenerAfterSpeak() {
@@ -585,10 +640,10 @@ class TestNotificationService : NotificationListenerService() {
         Log.d(TAG, "This replicates SpeakThat's pattern (Line 5038 speak vs Line 5060 listener)")
         
         showToast("Service: Testing listener AFTER speak()...")
-        val ivonaPackage = "ivona.tts"
+        val enginePackage = getEnginePackage()
         
         tts?.shutdown()
-        tts = TextToSpeech(this, { status ->
+        val listener = TextToSpeech.OnInitListener { status ->
             if (status == TextToSpeech.SUCCESS) {
                 Log.d(TAG, "SUCCESS: TTS initialized")
                 
@@ -621,7 +676,13 @@ class TestNotificationService : NotificationListenerService() {
             } else {
                 Log.e(TAG, "FAILED: TTS init, status: $status")
             }
-        }, ivonaPackage)
+        }
+
+        tts = if (enginePackage != null) {
+            TextToSpeech(this, listener, enginePackage)
+        } else {
+            TextToSpeech(this, listener)
+        }
     }
 
     private fun testVolumeBundle() {
@@ -629,10 +690,10 @@ class TestNotificationService : NotificationListenerService() {
         Log.d(TAG, "This tests if Ivona chokes on the specific Bundle parameters SpeakThat sends")
         
         showToast("Service: Testing speak() with volume bundle...")
-        val ivonaPackage = "ivona.tts"
+        val enginePackage = getEnginePackage()
         
         tts?.shutdown()
-        tts = TextToSpeech(this, { status ->
+        val listener = TextToSpeech.OnInitListener { status ->
             if (status == TextToSpeech.SUCCESS) {
                 Log.d(TAG, "SUCCESS: TTS initialized")
                 
@@ -648,7 +709,13 @@ class TestNotificationService : NotificationListenerService() {
             } else {
                 Log.e(TAG, "FAILED: TTS init, status: $status")
             }
-        }, ivonaPackage)
+        }
+
+        tts = if (enginePackage != null) {
+            TextToSpeech(this, listener, enginePackage)
+        } else {
+            TextToSpeech(this, listener)
+        }
     }
 
     private fun testListenerAfterSpeakWithBundle() {
@@ -656,10 +723,10 @@ class TestNotificationService : NotificationListenerService() {
         Log.d(TAG, "Combining the two suspicious patterns")
         
         showToast("Service: Testing SpeakThat Clone (Listener after + Bundle)...")
-        val ivonaPackage = "ivona.tts"
+        val enginePackage = getEnginePackage()
         
         tts?.shutdown()
-        tts = TextToSpeech(this, { status ->
+        val listener = TextToSpeech.OnInitListener { status ->
             if (status == TextToSpeech.SUCCESS) {
                 Log.d(TAG, "SUCCESS: TTS initialized")
                 
@@ -683,55 +750,99 @@ class TestNotificationService : NotificationListenerService() {
             } else {
                 Log.e(TAG, "FAILED: TTS init, status: $status")
             }
-        }, ivonaPackage)
+        }
+
+        tts = if (enginePackage != null) {
+            TextToSpeech(this, listener, enginePackage)
+        } else {
+            TextToSpeech(this, listener)
+        }
     }
 
 
 
-    private fun test2ArgTtsFromService() {
-        Log.d(TAG, "=== SERVICE TEST: 2-arg TTS ===")
-        Log.d(TAG, "Context type: ${this.javaClass.simpleName}")
-        Log.d(TAG, "Creating TTS with: TextToSpeech(this, listener)")
+    private fun testPrematureRecovery() {
+        Log.d(TAG, "=== SERVICE TEST: Premature Recovery Pattern (SpeakThat Replication) ===")
+        Log.d(TAG, "This test triggers recovery due to 'unsupported language' and then speaks")
+        Log.d(TAG, "during the recovery delay. Matches SpeakThat logs exactly.")
         
-        showToast("Service: Testing 2-arg TTS...")
+        showToast("Service: Testing Premature Recovery...")
+        val enginePackage = getEnginePackage()
         
         tts?.shutdown()
-        tts = TextToSpeech(this) { status ->
+        
+        val listener = TextToSpeech.OnInitListener { status ->
             if (status == TextToSpeech.SUCCESS) {
-                Log.d(TAG, "SUCCESS: 2-arg TTS initialized from NotificationListenerService")
-                val engine = tts?.defaultEngine
-                Log.d(TAG, "Default engine: $engine")
-                showToast("SUCCESS: 2-arg TTS from Service (engine: $engine)")
-                speakFromService("2-arg service test successful")
+                Log.d(TAG, "SUCCESS: TTS initialized")
+                
+                // 1. Replicate SpeakThat: Set language to en_US which returns -2 (LANG_MISSING_DATA)
+                val locale = java.util.Locale("en", "US")
+                val langResult = tts?.setLanguage(locale)
+                Log.d(TAG, "setLanguage(en_US) result: $langResult")
+                
+                // 2. Replicate SpeakThat checkTtsHealth(): check isLanguageAvailable(default)
+                val isAvailable = tts?.isLanguageAvailable(java.util.Locale.getDefault()) ?: TextToSpeech.LANG_NOT_SUPPORTED
+                Log.d(TAG, "isLanguageAvailable(default) result: $isAvailable")
+                
+                if (isAvailable == TextToSpeech.LANG_NOT_SUPPORTED || langResult == TextToSpeech.LANG_MISSING_DATA) {
+                    Log.w(TAG, "UNHEALTHY: Triggering recovery pattern with 1000ms delay")
+                    
+                    // 3. Schedule recovery (SpeakThat recovery delay is 1000ms)
+                    val handler = android.os.Handler(android.os.Looper.getMainLooper())
+                    handler.postDelayed({
+                        Log.w(TAG, "RECOVERY EXECUTING: Shutting down TTS instance mid-speech!")
+                        tts?.shutdown()
+                        tts = null
+                        showToast("Recovery shut down TTS!")
+                    }, 1000)
+                    
+                    // 4. SpeakThat returns false from health check, BUT if a speak call happens anyway:
+                    Log.d(TAG, "Attempting speak call IMMEDIATELY after triggering recovery")
+                    val result = tts?.speak("Testing speech that starts before the recovery shutdown happens.", TextToSpeech.QUEUE_FLUSH, null, "premature_recovery_test")
+                    Log.d(TAG, "speak() returned: $result")
+                    showToast("Speak call made! Watch for callbacks.")
+                } else {
+                    showToast("Language supported, recovery not triggered.")
+                    speakFromService("Language supported")
+                }
             } else {
-                Log.e(TAG, "FAILED: 2-arg TTS init from Service, status: $status")
-                showToast("FAILED: 2-arg TTS from Service, status: $status")
+                Log.e(TAG, "FAILED: TTS init, status: $status")
             }
+        }
+
+        tts = if (enginePackage != null) {
+            TextToSpeech(this, listener, enginePackage)
+        } else {
+            TextToSpeech(this, listener)
         }
     }
 
     private fun test3ArgTtsFromService() {
-        Log.d(TAG, "=== SERVICE TEST: 3-arg TTS with Ivona ===")
+        Log.d(TAG, "=== SERVICE TEST: 3-arg TTS with Selected Engine ===")
         Log.d(TAG, "Context type: ${this.javaClass.simpleName}")
         
-        val ivonaPackage = "ivona.tts"
-        Log.d(TAG, "Creating TTS with: TextToSpeech(this, listener, \"$ivonaPackage\")")
-        
-        showToast("Service: Testing 3-arg TTS with Ivona...")
+        showToast("Service: Testing 3-arg TTS with selected engine...")
+        val enginePackage = getEnginePackage()
         
         tts?.shutdown()
-        tts = TextToSpeech(this, { status ->
+        val listener = TextToSpeech.OnInitListener { status ->
             if (status == TextToSpeech.SUCCESS) {
-                Log.d(TAG, "SUCCESS: 3-arg TTS (Ivona) initialized from NotificationListenerService")
+                Log.d(TAG, "SUCCESS: 3-arg TTS initialized from NotificationListenerService")
                 val engine = tts?.defaultEngine
                 Log.d(TAG, "Reported engine: $engine")
-                showToast("SUCCESS: 3-arg Ivona from Service")
-                speakFromService("3-arg Ivona service test successful")
+                showToast("SUCCESS: 3-arg TTS from Service")
+                speakFromService("3-arg service test successful")
             } else {
-                Log.e(TAG, "FAILED: 3-arg TTS (Ivona) init from Service, status: $status")
-                showToast("FAILED: 3-arg Ivona from Service, status: $status")
+                Log.e(TAG, "FAILED: 3-arg TTS init from Service, status: $status")
+                showToast("FAILED: 3-arg init from Service, status: $status")
             }
-        }, ivonaPackage)
+        }
+
+        tts = if (enginePackage != null) {
+            TextToSpeech(this, listener, enginePackage)
+        } else {
+            TextToSpeech(this, listener)
+        }
     }
 
     private fun speakFromService(text: String) {
@@ -788,28 +899,34 @@ class TestNotificationService : NotificationListenerService() {
         }
     }
 
-    private fun testAppContextTts3ArgIvona() {
-        Log.d(TAG, "=== SERVICE TEST: 3-arg TTS with Ivona (ApplicationContext) ===")
+    private fun testAppContextTts3Arg() {
+        Log.d(TAG, "=== SERVICE TEST: 3-arg TTS with Selected Engine (ApplicationContext) ===")
         Log.d(TAG, "Context type: ApplicationContext (not service)")
+        val enginePackage = getEnginePackage()
         
-        val ivonaPackage = "ivona.tts"
-        Log.d(TAG, "Creating TTS with: TextToSpeech(applicationContext, listener, \"$ivonaPackage\")")
+        Log.d(TAG, "Creating TTS with: TextToSpeech(applicationContext, listener, \"${enginePackage ?: "default"}\")")
         
-        showToast("Service: Testing 3-arg TTS with Ivona (ApplicationContext)...")
+        showToast("Service: Testing 3-arg TTS with selected engine (ApplicationContext)...")
         
         tts?.shutdown()
-        tts = TextToSpeech(applicationContext, { status ->
+        val listener = TextToSpeech.OnInitListener { status ->
             if (status == TextToSpeech.SUCCESS) {
-                Log.d(TAG, "SUCCESS: 3-arg TTS (Ivona) with applicationContext initialized")
+                Log.d(TAG, "SUCCESS: 3-arg TTS with applicationContext initialized")
                 val engine = tts?.defaultEngine
                 Log.d(TAG, "Reported engine: $engine")
-                showToast("SUCCESS: 3-arg Ivona with appContext from Service")
-                speakFromService("app context 3-arg Ivona test successful")
+                showToast("SUCCESS: 3-arg with appContext from Service")
+                speakFromService("app context 3-arg test successful")
             } else {
-                Log.e(TAG, "FAILED: 3-arg TTS (Ivona) with appContext, status: $status")
-                showToast("FAILED: 3-arg Ivona with appContext, status: $status")
+                Log.e(TAG, "FAILED: 3-arg TTS with appContext, status: $status")
+                showToast("FAILED: 3-arg with appContext, status: $status")
             }
-        }, ivonaPackage)
+        }
+
+        tts = if (enginePackage != null) {
+            TextToSpeech(applicationContext, listener, enginePackage)
+        } else {
+            TextToSpeech(applicationContext, listener)
+        }
     }
 
     private fun testQueueAddMode() {
@@ -894,20 +1011,24 @@ class TestNotificationService : NotificationListenerService() {
     private fun testEngineVerification() {
         Log.d(TAG, "=== SERVICE TEST: Engine Verification ===")
         Log.d(TAG, "Before initializing with custom engine, verify it's available")
+        val enginePackage = getEnginePackage()
         
+        if (enginePackage == null) {
+            showToast("System default engine used - skipping verification")
+            return
+        }
+
         showToast("Service: Verifying engine availability...")
         
         try {
-            val ivonaPackage = "ivona.tts"
-            
             // Verify engine is available
             val ttsIntent = android.content.Intent(android.speech.tts.TextToSpeech.Engine.INTENT_ACTION_TTS_SERVICE)
-            ttsIntent.setPackage(ivonaPackage)
+            ttsIntent.setPackage(enginePackage)
             val resolveInfo = packageManager.resolveService(ttsIntent, android.content.pm.PackageManager.GET_RESOLVED_FILTER)
             
             if (resolveInfo != null) {
-                Log.d(TAG, "SUCCESS: Engine $ivonaPackage is available - ${resolveInfo.serviceInfo.packageName}")
-                showToast("Engine verification: $ivonaPackage is AVAILABLE")
+                Log.d(TAG, "SUCCESS: Engine $enginePackage is available - ${resolveInfo.serviceInfo.packageName}")
+                showToast("Engine verification: $enginePackage is AVAILABLE")
                 
                 // Now try to initialize with verified engine
                 tts?.shutdown()
@@ -920,10 +1041,10 @@ class TestNotificationService : NotificationListenerService() {
                         Log.e(TAG, "FAILED: Verified engine failed to initialize, status: $status")
                         showToast("FAILED: Verified engine init, status: $status")
                     }
-                }, ivonaPackage)
+                }, enginePackage)
             } else {
-                Log.w(TAG, "WARNING: Engine $ivonaPackage is NOT available")
-                showToast("Engine verification: $ivonaPackage is NOT AVAILABLE")
+                Log.w(TAG, "WARNING: Engine $enginePackage is NOT available")
+                showToast("Engine verification: $enginePackage is NOT AVAILABLE")
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error verifying engine: ${e.message}", e)
@@ -937,9 +1058,10 @@ class TestNotificationService : NotificationListenerService() {
         Log.d(TAG, "Key sequence: Stop TTS -> Apply settings -> Promote to foreground -> Set listener -> Speak")
         
         showToast("Service: Testing Foreground Service Pattern with Listener...")
+        val enginePackage = getEnginePackage()
         
         tts?.shutdown()
-        tts = TextToSpeech(applicationContext, { status ->
+        val listener = TextToSpeech.OnInitListener { status ->
             if (status == TextToSpeech.SUCCESS) {
                 Log.d(TAG, "SUCCESS: TTS initialized for Foreground+Listener test")
                 
@@ -1060,7 +1182,7 @@ class TestNotificationService : NotificationListenerService() {
                 // CRITICAL: Call speak() with QUEUE_FLUSH and the volume bundle
                 Log.d(TAG, "Step 7: Calling TTS.speak() with QUEUE_FLUSH")
                 val result = tts?.speak(
-                    "Testing foreground service with listener and Ivona engine compatibility",
+                    "Testing foreground service with listener and engine compatibility",
                     TextToSpeech.QUEUE_FLUSH,
                     volumeParams,
                     utteranceId
@@ -1071,7 +1193,14 @@ class TestNotificationService : NotificationListenerService() {
                 Log.e(TAG, "FAILED: TTS init for Foreground+Listener test, status: $status")
                 showToast("FAILED: Foreground+Listener test, status: $status")
             }
-        }, "ivona.tts")  // Use Ivona specifically
+        }
+
+        tts = if (enginePackage != null) {
+            TextToSpeech(applicationContext, listener, enginePackage)
+        } else {
+            TextToSpeech(applicationContext, listener)
+        }
+    }
     }
 
     private fun testLanguageAvailability() {
@@ -1079,9 +1208,10 @@ class TestNotificationService : NotificationListenerService() {
         Log.d(TAG, "SpeakThat checks language availability with isLanguageAvailable()")
         
         showToast("Service: Testing Language Availability...")
+        val enginePackage = getEnginePackage()
         
         tts?.shutdown()
-        tts = TextToSpeech(applicationContext, { status ->
+        val listener = TextToSpeech.OnInitListener { status ->
             if (status == TextToSpeech.SUCCESS) {
                 Log.d(TAG, "SUCCESS: TTS initialized for language availability test")
                 
@@ -1128,7 +1258,14 @@ class TestNotificationService : NotificationListenerService() {
                 Log.e(TAG, "FAILED: TTS init for language test, status: $status")
                 showToast("FAILED: Language test, status: $status")
             }
-        }, "ivona.tts")
+        }
+
+        tts = if (enginePackage != null) {
+            TextToSpeech(applicationContext, listener, enginePackage)
+        } else {
+            TextToSpeech(applicationContext, listener)
+        }
+    }
     }
 
     private fun testAudioAttributesUsage() {
@@ -1136,9 +1273,10 @@ class TestNotificationService : NotificationListenerService() {
         Log.d(TAG, "SpeakThat dynamically selects audio usage type based on settings")
         
         showToast("Service: Testing Audio Attributes (5 USAGE types)...")
+        val enginePackage = getEnginePackage()
         
         tts?.shutdown()
-        tts = TextToSpeech(applicationContext, { status ->
+        val listener = TextToSpeech.OnInitListener { status ->
             if (status == TextToSpeech.SUCCESS) {
                 Log.d(TAG, "SUCCESS: TTS initialized for audio attributes test")
                 
@@ -1187,7 +1325,14 @@ class TestNotificationService : NotificationListenerService() {
                 Log.e(TAG, "FAILED: TTS init for audio attributes test, status: $status")
                 showToast("FAILED: Audio attributes test, status: $status")
             }
-        }, "ivona.tts")
+        }
+
+        tts = if (enginePackage != null) {
+            TextToSpeech(applicationContext, listener, enginePackage)
+        } else {
+            TextToSpeech(applicationContext, listener)
+        }
+    }
     }
 
     private fun testSpeechRateAndPitch() {
@@ -1195,9 +1340,10 @@ class TestNotificationService : NotificationListenerService() {
         Log.d(TAG, "SpeakThat applies speech rate and pitch from voice preferences")
         
         showToast("Service: Testing Speech Rate and Pitch...")
+        val enginePackage = getEnginePackage()
         
         tts?.shutdown()
-        tts = TextToSpeech(applicationContext, { status ->
+        val listener = TextToSpeech.OnInitListener { status ->
             if (status == TextToSpeech.SUCCESS) {
                 Log.d(TAG, "SUCCESS: TTS initialized for speech settings test")
                 
@@ -1235,7 +1381,14 @@ class TestNotificationService : NotificationListenerService() {
                 Log.e(TAG, "FAILED: TTS init for speech settings test, status: $status")
                 showToast("FAILED: Speech settings test, status: $status")
             }
-        }, "ivona.tts")
+        }
+
+        tts = if (enginePackage != null) {
+            TextToSpeech(applicationContext, listener, enginePackage)
+        } else {
+            TextToSpeech(applicationContext, listener)
+        }
+    }
     }
 
     private fun testRecoveryPattern() {
@@ -1244,9 +1397,10 @@ class TestNotificationService : NotificationListenerService() {
         Log.d(TAG, "Testing recovery from TTS stop and reinit")
         
         showToast("Service: Testing Recovery Pattern...")
+        val enginePackage = getEnginePackage()
         
         tts?.shutdown()
-        tts = TextToSpeech(applicationContext, { status ->
+        val listener = TextToSpeech.OnInitListener { status ->
             if (status == TextToSpeech.SUCCESS) {
                 Log.d(TAG, "SUCCESS: TTS initialized for recovery test")
                 
@@ -1283,7 +1437,14 @@ class TestNotificationService : NotificationListenerService() {
                 Log.e(TAG, "FAILED: TTS init for recovery test, status: $status")
                 showToast("FAILED: Recovery test, status: $status")
             }
-        }, "ivona.tts")
+        }
+
+        tts = if (enginePackage != null) {
+            TextToSpeech(applicationContext, listener, enginePackage)
+        } else {
+            TextToSpeech(applicationContext, listener)
+        }
+    }
     }
 
     private fun testMultipleUsageTypes() {
@@ -1291,9 +1452,10 @@ class TestNotificationService : NotificationListenerService() {
         Log.d(TAG, "SpeakThat tries fallback usage types if primary fails")
         
         showToast("Service: Testing Multiple USAGE Types...")
+        val enginePackage = getEnginePackage()
         
         tts?.shutdown()
-        tts = TextToSpeech(applicationContext, { status ->
+        val listener = TextToSpeech.OnInitListener { status ->
             if (status == TextToSpeech.SUCCESS) {
                 Log.d(TAG, "SUCCESS: TTS initialized for multiple usage types test")
                 
@@ -1336,6 +1498,13 @@ class TestNotificationService : NotificationListenerService() {
                 Log.e(TAG, "FAILED: TTS init for multiple usage types test, status: $status")
                 showToast("FAILED: Multiple usage types test, status: $status")
             }
-        }, "ivona.tts")
+        }
+
+        tts = if (enginePackage != null) {
+            TextToSpeech(applicationContext, listener, enginePackage)
+        } else {
+            TextToSpeech(applicationContext, listener)
+        }
+    }
     }
 }

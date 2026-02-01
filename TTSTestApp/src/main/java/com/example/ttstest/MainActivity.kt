@@ -139,6 +139,16 @@ class MainActivity : AppCompatActivity() {
             setOnClickListener { triggerServiceTest(TestNotificationService.TEST_MULTIPLE_USAGE_TYPES) }
         }
 
+        val btnServiceSpeakThatExact = Button(this).apply {
+            text = "Service: SpeakThat Exact Pattern (CRITICAL)"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_SPEAKTHAT_EXACT) }
+        }
+
+        val btnServiceUsageAssistant = Button(this).apply {
+            text = "Service: Test USAGE_ASSISTANT"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_USAGE_ASSISTANT) }
+        }
+
         val btnListEngines = Button(this).apply {
             text = "List All TTS Engines"
             setOnClickListener { listAllTtsEngines() }
@@ -167,6 +177,8 @@ class MainActivity : AppCompatActivity() {
         container.addView(btnServiceSpeechSettings)
         container.addView(btnServiceRecovery)
         container.addView(btnServiceMultipleUsage)
+        container.addView(btnServiceSpeakThatExact)
+        container.addView(btnServiceUsageAssistant)
         container.addView(btnListEngines)
         container.addView(btnClearLog)
         container.addView(logTextView)

@@ -25,6 +25,8 @@ class TestNotificationService : NotificationListenerService() {
         const val TEST_SPEECH_RATE_PITCH = "test_speech_settings"
         const val TEST_RECOVERY_PATTERN = "test_recovery"
         const val TEST_MULTIPLE_USAGE_TYPES = "test_multiple_usage"
+        const val TEST_SPEAKTHAT_EXACT = "test_speakthat_exact"
+        const val TEST_USAGE_ASSISTANT = "test_usage_assistant"
     }
 
     private var tts: TextToSpeech? = null
@@ -59,9 +61,126 @@ class TestNotificationService : NotificationListenerService() {
                 TEST_SPEECH_RATE_PITCH -> testSpeechRateAndPitch()
                 TEST_RECOVERY_PATTERN -> testRecoveryPattern()
                 TEST_MULTIPLE_USAGE_TYPES -> testMultipleUsageTypes()
+                TEST_SPEAKTHAT_EXACT -> testSpeakThatExactPattern()
+                TEST_USAGE_ASSISTANT -> testUsageAssistant()
             }
         }
     }
+
+    // ... (existing helper methods)
+
+    private fun testSpeakThatExactPattern() {
+        Log.d(TAG, "=== SERVICE TEST: SpeakThat Exact Pattern ===")
+        Log.d(TAG, "Replicating: TextToSpeech(this, listener, \"ivona.tts\")")
+        Log.d(TAG, "AND running on MAIN THREAD (like SpeakThat onCreate)")
+        Log.d(TAG, "AND setting usage to USAGE_ASSISTANT in onInit")
+
+        showToast("Service: Testing SpeakThat Exact Pattern...")
+
+        // SpeakThat initializes in onCreate(), which is Main Thread.
+        // We must ensure this test runs on Main Thread to replicate it.
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            Log.d(TAG, "Initializing TTS on Thread: ${Thread.currentThread().name}")
+            
+            tts?.shutdown()
+            val ivonaPackage = "ivona.tts"
+            
+            // Use 'this' (Service) as context, and explicit package
+            tts = TextToSpeech(this, { status ->
+                Log.d(TAG, "onInit callback received on Thread: ${Thread.currentThread().name}")
+                if (status == TextToSpeech.SUCCESS) {
+                    Log.d(TAG, "SUCCESS: TTS init (SpeakThat pattern)")
+                    
+                    try {
+                        // Mimic SpeakThat: Set AudioAttributes to USAGE_ASSISTANT
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                            Log.d(TAG, "Setting AudioAttributes: USAGE_ASSISTANT")
+                            val attrs = android.media.AudioAttributes.Builder()
+                                .setUsage(android.media.AudioAttributes.USAGE_ASSISTANT)
+                                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
+                                .build()
+                            tts?.setAudioAttributes(attrs)
+                            Log.d(TAG, "setAudioAttributes called successfully")
+                        }
+                        
+                        // Mimic SpeakThat: Apply voice settings
+                        tts?.setSpeechRate(1.0f)
+                        tts?.setPitch(1.0f)
+                        Log.d(TAG, "Voice settings applied")
+                        
+                        showToast("SUCCESS: SpeakThat Pattern initialized")
+                        speakFromService("SpeakThat exact pattern test successful")
+                        
+                    } catch (e: Exception) {
+                        Log.e(TAG, "ERROR in onInit (SpeakThat pattern): ${e.message}", e)
+                        showToast("ERROR in onInit: ${e.message}")
+                    }
+                    
+                } else {
+                    Log.e(TAG, "FAILED: TTS init (SpeakThat pattern), status: $status")
+                    showToast("FAILED: SpeakThat Pattern init, status: $status")
+                }
+            }, ivonaPackage)
+        }
+    }
+
+    private fun testUsageAssistant() {
+        Log.d(TAG, "=== SERVICE TEST: Audio Attributes USAGE_ASSISTANT ===")
+        Log.d(TAG, "Targeting specifically USAGE_ASSISTANT (16) which SpeakThat uses")
+        
+        showToast("Service: Testing USAGE_ASSISTANT...")
+        val ivonaPackage = "ivona.tts"
+        
+        tts?.shutdown()
+        tts = TextToSpeech(this, { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                Log.d(TAG, "SUCCESS: TTS initialized")
+                
+                try {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                        Log.d(TAG, "Setting usage: USAGE_ASSISTANT")
+                        val attrs = android.media.AudioAttributes.Builder()
+                            .setUsage(android.media.AudioAttributes.USAGE_ASSISTANT)
+                            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
+                            .build()
+                        tts?.setAudioAttributes(attrs)
+                        Log.d(TAG, "Attributes set")
+                    }
+                    
+                    val result = tts?.speak("Testing usage assistant", TextToSpeech.QUEUE_FLUSH, null, "usage_assistant_test")
+                    Log.d(TAG, "Speak result: $result")
+                    showToast("USAGE_ASSISTANT test: Speak result $result")
+                    
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error setting USAGE_ASSISTANT", e)
+                    showToast("Error: ${e.message}")
+                }
+            } else {
+                Log.e(TAG, "FAILED: TTS init, status: $status")
+            }
+        }, ivonaPackage)
+    }
+
+    // ... (restore other methods if overwritten, but replace_file_content handles snippets well if I was careful about range, but here I am replacing the COMPANION OBJECT and onNotificationPosted, so I need to make sure I don't lose the wrapper class or imports.
+    // wait, replace_file_content replaces a BLOCK.
+    // I need to be careful not to delete the existing methods if I don't include them.
+    // The instructions say "StartLine and EndLine should specify a range...".
+    // I should use `multi_replace_file_content` or be very precise.
+    
+    // I'll try to insert the new methods at the END of the class, and update the Companion Object at the top.
+    
+    // Check lines again.
+    // Companion object is lines 13-28.
+    // onNotificationPosted is lines 32-64.
+    // Existing tests end at line 716.
+    
+    // So I will update Companion Object first.
+    // Then append new methods at the end.
+    
+    // Let's use multi_replace.
+    
+
+
 
     private fun test2ArgTtsFromService() {
         Log.d(TAG, "=== SERVICE TEST: 2-arg TTS ===")

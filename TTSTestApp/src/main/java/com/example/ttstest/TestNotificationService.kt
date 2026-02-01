@@ -29,6 +29,9 @@ class TestNotificationService : NotificationListenerService() {
         const val TEST_USAGE_ASSISTANT = "test_usage_assistant"
         const val TEST_LANGUAGE_EN_US_EXPLICIT = "test_language_en_us_explicit"
         const val TEST_LANGUAGE_AVAILABILITY_CHECK = "test_language_availability_check"
+        const val TEST_SPEAKTHAT_EXECUTION_PATTERN = "test_speakthat_execution_pattern"
+        const val TEST_STOP_BEFORE_SPEAK = "test_stop_before_speak"
+        const val TEST_REAPPLY_SETTINGS_BEFORE_SPEAK = "test_reapply_settings_before_speak"
     }
 
     private var tts: TextToSpeech? = null
@@ -67,6 +70,9 @@ class TestNotificationService : NotificationListenerService() {
                 TEST_USAGE_ASSISTANT -> testUsageAssistant()
                 TEST_LANGUAGE_EN_US_EXPLICIT -> testLanguageEnUsExplicit()
                 TEST_LANGUAGE_AVAILABILITY_CHECK -> testLanguageAvailabilityCheck()
+                TEST_SPEAKTHAT_EXECUTION_PATTERN -> testSpeakThatExecutionPattern()
+                TEST_STOP_BEFORE_SPEAK -> testStopBeforeSpeak()
+                TEST_REAPPLY_SETTINGS_BEFORE_SPEAK -> testReapplySettingsBeforeSpeak()
             }
         }
     }
@@ -294,8 +300,191 @@ class TestNotificationService : NotificationListenerService() {
         }, ivonaPackage)
     }
 
+    private fun testSpeakThatExecutionPattern() {
+        Log.d(TAG, "=== SERVICE TEST: SpeakThat COMPLETE Execution Pattern (SUPER CRITICAL) ===")
+        Log.d(TAG, "This is the EXACT sequence SpeakThat uses for every speak request")
+        Log.d(TAG, "Sequence: stop() -> sleep(50ms) -> applyVoiceSettings() -> foreground -> sleep(100ms) -> speak()")
+        
+        showToast("Service: Testing SpeakThat COMPLETE execution pattern...")
+        val ivonaPackage = "ivona.tts"
+        
+        tts?.shutdown()
+        tts = TextToSpeech(this, { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                Log.d(TAG, "SUCCESS: TTS initialized for execution pattern test")
+                
+                try {
+                    // STEP 1: STOP any existing TTS speech (even though there isn't any yet)
+                    Log.d(TAG, "Step 1: Calling stop() on fresh TTS instance")
+                    tts?.stop()
+                    
+                    // STEP 2: 50ms delay after stop
+                    Log.d(TAG, "Step 2: Sleeping 50ms after stop()")
+                    Thread.sleep(50)
+                    
+                    // STEP 3: Apply voice settings (reapply even if already set in onInit)
+                    Log.d(TAG, "Step 3: Reapplying voice settings")
+                    val locale = java.util.Locale("en", "US")
+                    val langResult = tts?.setLanguage(locale)
+                    Log.d(TAG, "  - setLanguage(en_US) returned: $langResult")
+                    
+                    tts?.setSpeechRate(1.0f)
+                    tts?.setPitch(1.0f)
+                    Log.d(TAG, "  - Speech rate and pitch set to 1.0")
+                    
+                    val attrs = android.media.AudioAttributes.Builder()
+                        .setUsage(android.media.AudioAttributes.USAGE_MEDIA) // SpeakThat actually uses MEDIA
+                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .build()
+                    tts?.setAudioAttributes(attrs)
+                    Log.d(TAG, "  - Audio attributes set to USAGE_MEDIA")
+                    
+                    // STEP 4: Promote to foreground service
+                    Log.d(TAG, "Step 4: Promoting to foreground service")
+                    try {
+                        val notification = android.app.Notification.Builder(this, "test_channel")
+                            .setSmallIcon(android.R.drawable.ic_dialog_info)
+                            .setContentTitle("TTS Test Reading")
+                            .setContentText("Testing SpeakThat Execution Pattern")
+                            .build()
+                        startForeground(1003, notification)
+                        Log.d(TAG, "  - Service promoted to foreground")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "  - Failed to promote to foreground: ${e.message}")
+                    }
+                    
+                   // STEP 5: 100ms delay after foreground promotion
+                    Log.d(TAG, "Step 5: Sleeping 100ms after foreground promotion")
+                    Thread.sleep(100)
+                    
+                    // STEP 6: Finally, speak
+                    Log.d(TAG, "Step 6: Calling speak()")
+                    val speakResult = tts?.speak(
+                        "Testing SpeakThat complete execution pattern",
+                        TextToSpeech.QUEUE_FLUSH,
+                        null,
+                        "execution_pattern_test"
+                    )
+                    Log.d(TAG, "  - speak() returned: $speakResult")
+                    
+                    if (speakResult == TextToSpeech.SUCCESS) {
+                        showToast("SpeakThat execution pattern: speak() SUCCESS")
+                    } else {
+                        showToast("SpeakThat execution pattern: speak() FAILED: $speakResult")
+                    }
+                    
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error in SpeakThat execution pattern test", e)
+                    showToast("Error: ${e.message}")
+                }
+            } else {
+                Log.e(TAG, "FAILED: TTS init, status: $status")
+                showToast("TTS init failed: $status")
+            }
+        }, ivonaPackage)
+    }
 
+    private fun testStopBeforeSpeak() {
+        Log.d(TAG, "=== SERVICE TEST: stop() Before speak() ===")
+        Log.d(TAG, "Testing if calling stop() on a fresh TTS instance causes issues")
+        
+        showToast("Service: Testing stop() before speak()...")
+        val ivonaPackage = "ivona.tts"
+        
+        tts?.shutdown()
+        tts = TextToSpeech(this, { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                Log.d(TAG, "SUCCESS: TTS initialized")
+                
+                try {
+                    // Call stop() even though nothing is playing
+                    Log.d(TAG, "Calling stop() on fresh TTS instance")
+                    tts?.stop()
+                    
+                    // Small delay like SpeakThat
+                    Thread.sleep(50)
+                    
+                    // Now try to speak
+                    Log.d(TAG, "Attempting to speak after stop()")
+                    val speakResult = tts?.speak(
+                        "Testing speak after stop",
+                        TextToSpeech.QUEUE_FLUSH,
+                        null,
+                        "stop_test"
+                    )
+                    Log.d(TAG, "speak() returned: $speakResult")
+                    
+                    if (speakResult == TextToSpeech.SUCCESS) {
+                        showToast("stop() before speak(): SUCCESS")
+                    } else {
+                        showToast("stop() before speak(): FAILED: $speakResult")
+                    }
+                    
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error in stop test", e)
+                    showToast("Error: ${e.message}")
+                }
+            } else {
+                Log.e(TAG, "FAILED: TTS init, status: $status")
+            }
+        }, ivonaPackage)
+    }
 
+    private fun testReapplySettingsBeforeSpeak() {
+        Log.d(TAG, "=== SERVICE TEST: Reapply Settings Before Each speak() ===")
+        Log.d(TAG, "Testing if reapplying settings before speak() causes issues")
+        
+        showToast("Service: Testing settings reapplication...")
+        val ivonaPackage = "ivona.tts"
+        
+        tts?.shutdown()
+        tts = TextToSpeech(this, { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                Log.d(TAG, "SUCCESS: TTS initialized")
+                
+                try {
+                    // Apply settings once in onInit
+                    Log.d(TAG, "First settings application (in onInit)")
+                    val locale = java.util.Locale("en", "US")
+                    tts?.setLanguage(locale)
+                    tts?.setSpeechRate(1.0f)
+                    tts?.setPitch(1.0f)
+                    
+                    // Wait a bit
+                    Thread.sleep(100)
+                    
+                    // Reapply the SAME settings again (like SpeakThat does before every speak)
+                    Log.d(TAG, "Second settings application (before speak)")
+                    val langResult2 = tts?.setLanguage(locale)
+                    Log.d(TAG, "  - setLanguage() second call returned: $langResult2")
+                    tts?.setSpeechRate(1.0f)
+                    tts?.setPitch(1.0f)
+                    
+                    // Now speak
+                    Log.d(TAG, "Attempting to speak after reapplying settings")
+                    val speakResult = tts?.speak(
+                        "Testing after reapplying settings",
+                        TextToSpeech.QUEUE_FLUSH,
+                        null,
+                        "reapply_test"
+                    )
+                    Log.d(TAG, "speak() returned: $speakResult")
+                    
+                    if (speakResult == TextToSpeech.SUCCESS) {
+                        showToast("Settings reapplication: SUCCESS")
+                    } else {
+                        showToast("Settings reapplication: FAILED: $speakResult")
+                    }
+                    
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error in reapply settings test", e)
+                    showToast("Error: ${e.message}")
+                }
+            } else {
+                Log.e(TAG, "FAILED: TTS init, status: $status")
+            }
+        }, ivonaPackage)
+    }
 
     private fun test2ArgTtsFromService() {
         Log.d(TAG, "=== SERVICE TEST: 2-arg TTS ===")

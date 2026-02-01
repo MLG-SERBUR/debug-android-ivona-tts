@@ -159,6 +159,21 @@ class MainActivity : AppCompatActivity() {
             setOnClickListener { triggerServiceTest(TestNotificationService.TEST_LANGUAGE_AVAILABILITY_CHECK) }
         }
 
+        val btnServiceSpeakThatExecution = Button(this).apply {
+            text = "Service: SpeakThat COMPLETE Execution (SUPER CRITICAL)"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_SPEAKTHAT_EXECUTION_PATTERN) }
+        }
+
+        val btnServiceStopBeforeSpeak = Button(this).apply {
+            text = "Service: stop() Before speak()"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_STOP_BEFORE_SPEAK) }
+        }
+
+        val btnServiceReapplySettings = Button(this).apply {
+            text = "Service: Reapply Settings Before speak()"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_REAPPLY_SETTINGS_BEFORE_SPEAK) }
+        }
+
         val btnListEngines = Button(this).apply {
             text = "List All TTS Engines"
             setOnClickListener { listAllTtsEngines() }
@@ -191,6 +206,9 @@ class MainActivity : AppCompatActivity() {
         container.addView(btnServiceUsageAssistant)
         container.addView(btnServiceLanguageEnUs)
         container.addView(btnServiceLanguageCheck)
+        container.addView(btnServiceSpeakThatExecution)
+        container.addView(btnServiceStopBeforeSpeak)
+        container.addView(btnServiceReapplySettings)
         container.addView(btnListEngines)
         container.addView(btnClearLog)
         container.addView(logTextView)

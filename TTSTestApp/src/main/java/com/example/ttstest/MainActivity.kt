@@ -174,6 +174,11 @@ class MainActivity : AppCompatActivity() {
             setOnClickListener { triggerServiceTest(TestNotificationService.TEST_REAPPLY_SETTINGS_BEFORE_SPEAK) }
         }
 
+        val btnServiceRecoveryPattern = Button(this).apply {
+            text = "Service: TTS Recovery Pattern (THE BUG!)"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_TTS_RECOVERY_PATTERN) }
+        }
+
         val btnListEngines = Button(this).apply {
             text = "List All TTS Engines"
             setOnClickListener { listAllTtsEngines() }
@@ -209,6 +214,7 @@ class MainActivity : AppCompatActivity() {
         container.addView(btnServiceSpeakThatExecution)
         container.addView(btnServiceStopBeforeSpeak)
         container.addView(btnServiceReapplySettings)
+        container.addView(btnServiceRecoveryPattern)
         container.addView(btnListEngines)
         container.addView(btnClearLog)
         container.addView(logTextView)

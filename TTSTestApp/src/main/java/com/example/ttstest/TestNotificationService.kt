@@ -32,6 +32,7 @@ class TestNotificationService : NotificationListenerService() {
         const val TEST_SPEAKTHAT_EXECUTION_PATTERN = "test_speakthat_execution_pattern"
         const val TEST_STOP_BEFORE_SPEAK = "test_stop_before_speak"
         const val TEST_REAPPLY_SETTINGS_BEFORE_SPEAK = "test_reapply_settings_before_speak"
+        const val TEST_TTS_RECOVERY_PATTERN = "test_tts_recovery_pattern"
     }
 
     private var tts: TextToSpeech? = null
@@ -73,6 +74,7 @@ class TestNotificationService : NotificationListenerService() {
                 TEST_SPEAKTHAT_EXECUTION_PATTERN -> testSpeakThatExecutionPattern()
                 TEST_STOP_BEFORE_SPEAK -> testStopBeforeSpeak()
                 TEST_REAPPLY_SETTINGS_BEFORE_SPEAK -> testReapplySettingsBeforeSpeak()
+                TEST_TTS_RECOVERY_PATTERN -> testTtsRecoveryPattern()
             }
         }
     }
@@ -485,6 +487,93 @@ class TestNotificationService : NotificationListenerService() {
             }
         }, ivonaPackage)
     }
+
+    private fun testTtsRecoveryPattern() {
+        Log.d(TAG, "=== SERVICE TEST: TTS Recovery Pattern (THE BUG!) ===")
+        Log.d(TAG, "This replicates SpeakThat's BROKEN recovery logic")
+        Log.d(TAG, "Bug: TTS recovery reinitializes WITHOUT the engine package!")
+        
+        showToast("Service: Testing TTS recovery pattern...")
+        val ivonaPackage = "ivona.tts"
+        
+        tts?.shutdown()
+        
+        // STEP 1: Initialize with Ivona (like normal)
+        Log.d(TAG, "Step 1: Initializing TTS with Ivona package")
+        tts = TextToSpeech(this, { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                Log.d(TAG, "  - SUCCESS: TTS initialized with Ivona")
+                val engine1 = tts?.defaultEngine
+                Log.d(TAG, "  - Current engine: $engine1")
+                
+                // Simulate speaking once successfully
+                val firstSpeak = tts?.speak("First speak works", TextToSpeech.QUEUE_FLUSH, null, "first")
+                Log.d(TAG, "  - First speak() returned: $firstSpeak")
+                
+                // Wait for first speak to complete
+                Thread.sleep(2000)
+                
+                // STEP 2: Simulate recovery trigger (like when language returns -2)
+                Log.d(TAG, "Step 2: SIMULATING TTS RECOVERY due to language error")
+                
+                // STEP 3: Shutdown existing TTS (SpeakThat recovery line 1199)
+                Log.d(TAG, "Step 3: Shutting down TTS")
+                try {
+                    tts?.shutdown()
+                    Log.d(TAG, "  - Shutdown complete")
+                } catch (e: Exception) {
+                    Log.e(TAG, "  - Error during shutdown: ${e.message}")
+                }
+                
+                // STEP 4: Clear state (SpeakThat recovery lines 1206-1207)
+                Log.d(TAG, "Step 4: Clearing TTS state")
+                tts = null
+                
+                // STEP 5: Wait 500ms (SpeakThat recovery line 1211)
+                Log.d(TAG, "Step 5: Waiting 500ms for cleanup")
+                Thread.sleep(500)
+                
+                // STEP 6: REINITIALIZE WITHOUT ENGINE PACKAGE (THE BUG - line 1237)
+                Log.d(TAG, "Step 6: Reinitializing TTS WITHOUT engine package (BUG!)")
+                Log.d(TAG, "  - SpeakThat does: TextToSpeech(this, this)")
+                Log.d(TAG, "  - This switches from Ivona to DEFAULT engine!")
+                
+                tts = TextToSpeech(this@TestNotificationService, { status2 ->
+                    if (status2 == TextToSpeech.SUCCESS) {
+                        Log.d(TAG, "  - SUCCESS: TTS reinitialized (but with DIFFERENT engine!)")
+                        val engine2 = tts?.defaultEngine
+                        Log.d(TAG, "  - NEW engine after recovery: $engine2")
+                        
+                        if (engine1 != engine2) {
+                            Log.e(TAG, "  - ENGINE CHANGED! Was: $engine1, Now: $engine2")
+                            showToast("BUG CONFIRMED: Engine switched from $engine1 to $engine2!")
+                        } else {
+                            Log.w(TAG, "  - Engine stayed the same (unexpected)")
+                            showToast("Engine stayed same: $engine2")
+                        }
+                        
+                        // Try to speak with the new engine
+                        val secondSpeak = tts?.speak(
+                            "After recovery with different engine",
+                            TextToSpeech.QUEUE_FLUSH,
+                            null,
+                            "second"
+                        )
+                        Log.d(TAG, "  - Second speak() returned: $secondSpeak")
+                        
+                    } else {
+                        Log.e(TAG, "  - FAILED: Recovery reinit failed, status: $status2")
+                        showToast("Recovery reinit failed: $status2")
+                    }
+                }) // NOTE: NO ENGINE PACKAGE HERE - this is the bug!
+                
+            } else {
+                Log.e(TAG, "FAILED: Initial TTS init failed, status: $status")
+                showToast("Initial TTS init failed: $status")
+            }
+        }, ivonaPackage) // Initial init specifies ivona
+    }
+
 
     private fun test2ArgTtsFromService() {
         Log.d(TAG, "=== SERVICE TEST: 2-arg TTS ===")

@@ -27,6 +27,8 @@ class TestNotificationService : NotificationListenerService() {
         const val TEST_MULTIPLE_USAGE_TYPES = "test_multiple_usage"
         const val TEST_SPEAKTHAT_EXACT = "test_speakthat_exact"
         const val TEST_USAGE_ASSISTANT = "test_usage_assistant"
+        const val TEST_LANGUAGE_EN_US_EXPLICIT = "test_language_en_us_explicit"
+        const val TEST_LANGUAGE_AVAILABILITY_CHECK = "test_language_availability_check"
     }
 
     private var tts: TextToSpeech? = null
@@ -63,6 +65,8 @@ class TestNotificationService : NotificationListenerService() {
                 TEST_MULTIPLE_USAGE_TYPES -> testMultipleUsageTypes()
                 TEST_SPEAKTHAT_EXACT -> testSpeakThatExactPattern()
                 TEST_USAGE_ASSISTANT -> testUsageAssistant()
+                TEST_LANGUAGE_EN_US_EXPLICIT -> testLanguageEnUsExplicit()
+                TEST_LANGUAGE_AVAILABILITY_CHECK -> testLanguageAvailabilityCheck()
             }
         }
     }
@@ -161,24 +165,135 @@ class TestNotificationService : NotificationListenerService() {
         }, ivonaPackage)
     }
 
-    // ... (restore other methods if overwritten, but replace_file_content handles snippets well if I was careful about range, but here I am replacing the COMPANION OBJECT and onNotificationPosted, so I need to make sure I don't lose the wrapper class or imports.
-    // wait, replace_file_content replaces a BLOCK.
-    // I need to be careful not to delete the existing methods if I don't include them.
-    // The instructions say "StartLine and EndLine should specify a range...".
-    // I should use `multi_replace_file_content` or be very precise.
-    
-    // I'll try to insert the new methods at the END of the class, and update the Companion Object at the top.
-    
-    // Check lines again.
-    // Companion object is lines 13-28.
-    // onNotificationPosted is lines 32-64.
-    // Existing tests end at line 716.
-    
-    // So I will update Companion Object first.
-    // Then append new methods at the end.
-    
-    // Let's use multi_replace.
-    
+
+    private fun testLanguageEnUsExplicit() {
+        Log.d(TAG, "=== SERVICE TEST: Explicit en_US Language Setting (CRITICAL) ===")
+        Log.d(TAG, "This replicates SpeakThat's exact behavior that causes LANG_MISSING_DATA")
+        
+        showToast("Service: Testing explicit en_US language...")
+        val ivonaPackage = "ivona.tts"
+        
+        tts?.shutdown()
+        tts = TextToSpeech(this, { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                Log.d(TAG, "SUCCESS: TTS initialized")
+                
+                try {
+                    // Replicate SpeakThat: Set language to en_US explicitly
+                    val locale = java.util.Locale("en", "US")
+                    Log.d(TAG, "Attempting to set language: $locale")
+                    
+                    val langResult = tts?.setLanguage(locale)
+                    Log.d(TAG, "setLanguage() returned: $langResult")
+                    
+                    when (langResult) {
+                        TextToSpeech.LANG_MISSING_DATA -> {
+                            Log.e(TAG, "LANG_MISSING_DATA (-2) - This is the SpeakThat issue!")
+                            showToast("LANG_MISSING_DATA - This causes SpeakThat to fail!")
+                        }
+                        TextToSpeech.LANG_NOT_SUPPORTED -> {
+                            Log.e(TAG, "LANG_NOT_SUPPORTED (-1)")
+                            showToast("Language not supported")
+                        }
+                        TextToSpeech.LANG_AVAILABLE -> {
+                            Log.d(TAG, "LANG_AVAILABLE (0)")
+                            showToast("Language available (basic)")
+                        }
+                        TextToSpeech.LANG_COUNTRY_AVAILABLE -> {
+                            Log.d(TAG, "LANG_COUNTRY_AVAILABLE (1)")
+                            showToast("Language + country available")
+                        }
+                        TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE -> {
+                            Log.d(TAG, "LANG_COUNTRY_VAR_AVAILABLE (2)")
+                            showToast("Full locale available")
+                        }
+                        else -> {
+                            Log.w(TAG, "Unknown language result: $langResult")
+                            showToast("Unknown result: $langResult")
+                        }
+                    }
+                    
+                    // Try to speak anyway to see what happens
+                    Log.d(TAG, "Attempting to speak after language set...")
+                    val speakResult = tts?.speak(
+                        "Testing after explicit en US language setting", 
+                        TextToSpeech.QUEUE_FLUSH, 
+                        null, 
+                        "lang_test"
+                    )
+                    Log.d(TAG, "speak() returned: $speakResult")
+                    
+                    if (speakResult != TextToSpeech.SUCCESS) {
+                        Log.e(TAG, "speak() failed with result: $speakResult")
+                        showToast("speak() failed: $speakResult")
+                    }
+                    
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error during language test", e)
+                    showToast("Error: ${e.message}")
+                }
+            } else {
+                Log.e(TAG, "FAILED: TTS init, status: $status")
+                showToast("TTS init failed: $status")
+            }
+        }, ivonaPackage)
+    }
+
+    private fun testLanguageAvailabilityCheck() {
+        Log.d(TAG, "=== SERVICE TEST: Proper Language Availability Check ===")
+        Log.d(TAG, "This is the CORRECT way to handle language setting")
+        
+        showToast("Service: Testing proper language availability check...")
+        val ivonaPackage = "ivona.tts"
+        
+        tts?.shutdown()
+        tts = TextToSpeech(this, { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                Log.d(TAG, "SUCCESS: TTS initialized")
+                
+                try {
+                    val locale = java.util.Locale("en", "US")
+                    
+                    // CORRECT: Check availability BEFORE setting
+                    Log.d(TAG, "Checking if $locale is available...")
+                    val availResult = tts?.isLanguageAvailable(locale)
+                    Log.d(TAG, "isLanguageAvailable() returned: $availResult")
+                    
+                    when (availResult) {
+                        TextToSpeech.LANG_MISSING_DATA -> {
+                            Log.w(TAG, "Language data missing - using default instead")
+                            showToast("Missing data - using default")
+                            // Don't call setLanguage(), just use default
+                        }
+                        TextToSpeech.LANG_NOT_SUPPORTED -> {
+                            Log.w(TAG, "Language not supported - using default")
+                            showToast("Not supported - using default")
+                            // Don't call setLanguage(), just use default
+                        }
+                        else -> {
+                            // Available at some level - safe to set
+                            Log.d(TAG, "Language available - setting it")
+                            val setResult = tts?.setLanguage(locale)
+                            Log.d(TAG, "setLanguage() returned: $setResult")
+                            showToast("Language set successfully")
+                        }
+                    }
+                    
+                    // Now try to speak
+                    Log.d(TAG, "Attempting to speak...")
+                    speakFromService("Testing with proper language availability check")
+                    
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error during availability check test", e)
+                    showToast("Error: ${e.message}")
+                }
+            } else {
+                Log.e(TAG, "FAILED: TTS init, status: $status")
+                showToast("TTS init failed: $status")
+            }
+        }, ivonaPackage)
+    }
+
 
 
 

@@ -149,6 +149,16 @@ class MainActivity : AppCompatActivity() {
             setOnClickListener { triggerServiceTest(TestNotificationService.TEST_USAGE_ASSISTANT) }
         }
 
+        val btnServiceLanguageEnUs = Button(this).apply {
+            text = "Service: Force en_US Language (CRITICAL)"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_LANGUAGE_EN_US_EXPLICIT) }
+        }
+
+        val btnServiceLanguageCheck = Button(this).apply {
+            text = "Service: Proper Language Check"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_LANGUAGE_AVAILABILITY_CHECK) }
+        }
+
         val btnListEngines = Button(this).apply {
             text = "List All TTS Engines"
             setOnClickListener { listAllTtsEngines() }
@@ -179,6 +189,8 @@ class MainActivity : AppCompatActivity() {
         container.addView(btnServiceMultipleUsage)
         container.addView(btnServiceSpeakThatExact)
         container.addView(btnServiceUsageAssistant)
+        container.addView(btnServiceLanguageEnUs)
+        container.addView(btnServiceLanguageCheck)
         container.addView(btnListEngines)
         container.addView(btnClearLog)
         container.addView(logTextView)

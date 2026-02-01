@@ -33,6 +33,9 @@ class TestNotificationService : NotificationListenerService() {
         const val TEST_STOP_BEFORE_SPEAK = "test_stop_before_speak"
         const val TEST_REAPPLY_SETTINGS_BEFORE_SPEAK = "test_reapply_settings_before_speak"
         const val TEST_TTS_RECOVERY_PATTERN = "test_tts_recovery_pattern"
+        const val TEST_LISTENER_AFTER_SPEAK = "test_listener_after_speak"
+        const val TEST_VOLUME_BUNDLE = "test_volume_bundle"
+        const val TEST_LISTENER_AFTER_SPEAK_WITH_BUNDLE = "test_listener_after_speak_with_bundle"
     }
 
     private var tts: TextToSpeech? = null
@@ -75,6 +78,9 @@ class TestNotificationService : NotificationListenerService() {
                 TEST_STOP_BEFORE_SPEAK -> testStopBeforeSpeak()
                 TEST_REAPPLY_SETTINGS_BEFORE_SPEAK -> testReapplySettingsBeforeSpeak()
                 TEST_TTS_RECOVERY_PATTERN -> testTtsRecoveryPattern()
+                TEST_LISTENER_AFTER_SPEAK -> testListenerAfterSpeak()
+                TEST_VOLUME_BUNDLE -> testVolumeBundle()
+                TEST_LISTENER_AFTER_SPEAK_WITH_BUNDLE -> testListenerAfterSpeakWithBundle()
             }
         }
     }
@@ -573,6 +579,113 @@ class TestNotificationService : NotificationListenerService() {
             }
         }, ivonaPackage) // Initial init specifies ivona
     }
+
+    private fun testListenerAfterSpeak() {
+        Log.d(TAG, "=== SERVICE TEST: setOnUtteranceProgressListener AFTER speak() ===")
+        Log.d(TAG, "This replicates SpeakThat's pattern (Line 5038 speak vs Line 5060 listener)")
+        
+        showToast("Service: Testing listener AFTER speak()...")
+        val ivonaPackage = "ivona.tts"
+        
+        tts?.shutdown()
+        tts = TextToSpeech(this, { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                Log.d(TAG, "SUCCESS: TTS initialized")
+                
+                // STEP 1: Call speak()
+                Log.d(TAG, "Step 1: Calling speak() BEFORE setting listener")
+                val utteranceId = "after_speak_test"
+                val result = tts?.speak("Testing listener set after speak", TextToSpeech.QUEUE_FLUSH, null, utteranceId)
+                Log.d(TAG, "  - speak() returned: $result")
+                
+                // STEP 2: IMMEDIATELY set listener
+                Log.d(TAG, "Step 2: Setting UtteranceProgressListener")
+                tts?.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+                    override fun onStart(id: String?) {
+                        Log.d(TAG, "  - Callback RECEIVED: onStart for $id")
+                        showToast("onStart received!")
+                    }
+                    override fun onDone(id: String?) {
+                        Log.d(TAG, "  - Callback RECEIVED: onDone for $id")
+                        showToast("onDone received!")
+                    }
+                    override fun onError(id: String?) {
+                        Log.e(TAG, "  - Callback RECEIVED: onError for $id")
+                        showToast("onError received!")
+                    }
+                })
+                
+                // Check if we missed it
+                Log.d(TAG, "Listener applied. If onStart/onDone don't fire, we missed the window.")
+                
+            } else {
+                Log.e(TAG, "FAILED: TTS init, status: $status")
+            }
+        }, ivonaPackage)
+    }
+
+    private fun testVolumeBundle() {
+        Log.d(TAG, "=== SERVICE TEST: speak() with SpeakThat Volume Bundle ===")
+        Log.d(TAG, "This tests if Ivona chokes on the specific Bundle parameters SpeakThat sends")
+        
+        showToast("Service: Testing speak() with volume bundle...")
+        val ivonaPackage = "ivona.tts"
+        
+        tts?.shutdown()
+        tts = TextToSpeech(this, { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                Log.d(TAG, "SUCCESS: TTS initialized")
+                
+                // Mimic SpeakThat's volume bundle creation
+                val bundle = android.os.Bundle()
+                bundle.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1.0f)
+                bundle.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, android.media.AudioManager.STREAM_MUSIC)
+                
+                Log.d(TAG, "Step 1: Calling speak() with KEY_PARAM_VOLUME and KEY_PARAM_STREAM bundle")
+                val result = tts?.speak("Testing volume bundle parameters", TextToSpeech.QUEUE_FLUSH, bundle, "bundle_test")
+                Log.d(TAG, "  - speak() returned: $result")
+                
+            } else {
+                Log.e(TAG, "FAILED: TTS init, status: $status")
+            }
+        }, ivonaPackage)
+    }
+
+    private fun testListenerAfterSpeakWithBundle() {
+        Log.d(TAG, "=== SERVICE TEST: Listener AFTER speak() + Volume Bundle (SpeakThat Clone) ===")
+        Log.d(TAG, "Combining the two suspicious patterns")
+        
+        showToast("Service: Testing SpeakThat Clone (Listener after + Bundle)...")
+        val ivonaPackage = "ivona.tts"
+        
+        tts?.shutdown()
+        tts = TextToSpeech(this, { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                Log.d(TAG, "SUCCESS: TTS initialized")
+                
+                val bundle = android.os.Bundle()
+                bundle.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1.0f)
+                bundle.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, android.media.AudioManager.STREAM_MUSIC)
+                
+                Log.d(TAG, "Step 1: Calling speak() with bundle")
+                tts?.speak("Testing combined listener and bundle pattern", TextToSpeech.QUEUE_FLUSH, bundle, "combined_test")
+                
+                Log.d(TAG, "Step 2: Setting listener AFTER speak()")
+                tts?.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+                    override fun onStart(id: String?) { Log.d(TAG, "  - onStart $id") }
+                    override fun onDone(id: String?) { 
+                        Log.d(TAG, "  - onDone $id")
+                        showToast("Combined test completed!")
+                    }
+                    override fun onError(id: String?) { Log.e(TAG, "  - onError $id") }
+                })
+                
+            } else {
+                Log.e(TAG, "FAILED: TTS init, status: $status")
+            }
+        }, ivonaPackage)
+    }
+
 
 
     private fun test2ArgTtsFromService() {

@@ -179,6 +179,21 @@ class MainActivity : AppCompatActivity() {
             setOnClickListener { triggerServiceTest(TestNotificationService.TEST_TTS_RECOVERY_PATTERN) }
         }
 
+        val btnServiceListenerAfter = Button(this).apply {
+            text = "Service: Listener AFTER speak()"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_LISTENER_AFTER_SPEAK) }
+        }
+
+        val btnServiceVolumeBundle = Button(this).apply {
+            text = "Service: speak() with Volume Bundle"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_VOLUME_BUNDLE) }
+        }
+
+        val btnServiceSpeakThatClone = Button(this).apply {
+            text = "Service: SpeakThat Clone (Listener After + Bundle)"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_LISTENER_AFTER_SPEAK_WITH_BUNDLE) }
+        }
+
         val btnListEngines = Button(this).apply {
             text = "List All TTS Engines"
             setOnClickListener { listAllTtsEngines() }
@@ -215,6 +230,9 @@ class MainActivity : AppCompatActivity() {
         container.addView(btnServiceStopBeforeSpeak)
         container.addView(btnServiceReapplySettings)
         container.addView(btnServiceRecoveryPattern)
+        container.addView(btnServiceListenerAfter)
+        container.addView(btnServiceVolumeBundle)
+        container.addView(btnServiceSpeakThatClone)
         container.addView(btnListEngines)
         container.addView(btnClearLog)
         container.addView(logTextView)

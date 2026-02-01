@@ -1,0 +1,40 @@
+# Built artifacts
+*.apk
+*.ap_
+*.dex
+bin/
+gen/
+out/
+build/
+captures/
+
+# Native libraries (Keep if you want to track .so files, but often ignored if built from source)
+# lib/ [cite: 4, 14]
+
+# Android Studio / IntelliJ files
+.idea/
+.gradle/
+local.properties
+*.iml
+*.iws
+*.ipr
+atlassian-ide-plugin.xml
+.navigation/
+
+# Gradle files
+.gradle/
+build/
+gradlew
+gradlew.bat
+gradle/wrapper/gradle-wrapper.properties
+gradle/wrapper/gradle-wrapper.jar
+
+# Log files
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Device/Emulator files
+*.prof

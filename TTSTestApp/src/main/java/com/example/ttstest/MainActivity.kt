@@ -1,124 +1,242 @@
 package com.example.ttstest
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.util.Log
 import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import java.util.Locale
+import androidx.core.app.NotificationCompat
+import java.text.SimpleDateFormat
+import java.util.*
 
-class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
-    private var tts: TextToSpeech? = null
-    private val TAG = "TTSTest"
-    private lateinit var statusText: TextView
+class MainActivity : AppCompatActivity() {
+
+    companion object {
+        private const val TAG = "DebugIvonaTTS"
+        private const val CHANNEL_ID = "debug_channel"
+        private const val NOTIFICATION_ID = 1001
+    }
+
+    private lateinit var logTextView: TextView
+    private lateinit var scrollView: ScrollView
+    private val logBuilder = StringBuilder()
+
+    private var activityTts2Arg: TextToSpeech? = null
+    private var activityTts3Arg: TextToSpeech? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
 
-        Log.d(TAG, "MainActivity created - onCreate() called")
-
-        val btn1 = findViewById<Button>(R.id.btn_tts_app_context)
-        val btn2 = findViewById<Button>(R.id.btn_tts_service_context)
-        val btn3 = findViewById<Button>(R.id.btn_test_speak)
-        statusText = findViewById(R.id.status_text)
-
-        btn1.setOnClickListener {
-            Log.d(TAG, "Button 1 clicked: Testing TextToSpeech with app context")
-            testTtsWithAppContext()
+        scrollView = ScrollView(this)
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(32, 32, 32, 32)
         }
 
-        btn2.setOnClickListener {
-            Log.d(TAG, "Button 2 clicked: Testing TextToSpeech with activity context")
-            testTtsWithActivityContext()
+        logTextView = TextView(this).apply {
+            textSize = 12f
+            setTextIsSelectable(true)
         }
 
-        btn3.setOnClickListener {
-            Log.d(TAG, "Button 3 clicked: Triggering test speech")
-            // This button is for testing an already initialized TTS engine
-            speak("Hello, this is a direct test.")
+        val btn2ArgActivity = Button(this).apply {
+            text = "Test 2-arg TTS (Activity Context)"
+            setOnClickListener { test2ArgFromActivity() }
         }
 
-        Log.d(TAG, "MainActivity UI initialized successfully")
+        val btn3ArgActivity = Button(this).apply {
+            text = "Test 3-arg TTS with Ivona (Activity)"
+            setOnClickListener { test3ArgFromActivityWithIvona() }
+        }
+
+        val btnCheckPermission = Button(this).apply {
+            text = "Check NotificationListener Permission"
+            setOnClickListener { checkNotificationListenerPermission() }
+        }
+
+        val btnOpenSettings = Button(this).apply {
+            text = "Open NotificationListener Settings"
+            setOnClickListener { openNotificationListenerSettings() }
+        }
+
+        val btnSendNotification = Button(this).apply {
+            text = "Send Test Notification"
+            setOnClickListener { sendTestNotification() }
+        }
+
+        val btnServiceTest2Arg = Button(this).apply {
+            text = "Service: Test 2-arg TTS"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_2ARG) }
+        }
+
+        val btnServiceTest3Arg = Button(this).apply {
+            text = "Service: Test 3-arg TTS (Ivona)"
+            setOnClickListener { triggerServiceTest(TestNotificationService.TEST_3ARG_IVONA) }
+        }
+
+        val btnListEngines = Button(this).apply {
+            text = "List All TTS Engines"
+            setOnClickListener { listAllTtsEngines() }
+        }
+
+        val btnClearLog = Button(this).apply {
+            text = "Clear Log"
+            setOnClickListener { clearLog() }
+        }
+
+        container.addView(btn2ArgActivity)
+        container.addView(btn3ArgActivity)
+        container.addView(btnCheckPermission)
+        container.addView(btnOpenSettings)
+        container.addView(btnSendNotification)
+        container.addView(btnServiceTest2Arg)
+        container.addView(btnServiceTest3Arg)
+        container.addView(btnListEngines)
+        container.addView(btnClearLog)
+        container.addView(logTextView)
+
+        scrollView.addView(container)
+        setContentView(scrollView)
+
+        createNotificationChannel()
+        log("=== Debug Ivona TTS Test App ===")
+        log("Device: ${Build.MANUFACTURER} ${Build.MODEL}")
+        log("Android: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
     }
 
-    /**
-     * Test 1: Using Application Context with a Lambda for the callback.
-     * This is a modern and concise approach.
-     */
-    private fun testTtsWithAppContext() {
-        statusText.text = "Testing: App Context TTS Init..."
-        // Ensure any previous instance is shut down
-        tts?.shutdown()
-        
-        tts = TextToSpeech(applicationContext) { status ->
+    private fun log(message: String) {
+        val timestamp = SimpleDateFormat("HH:mm:ss.SSS", Locale.US).format(Date())
+        val logLine = "[$timestamp] $message\n"
+        Log.d(TAG, message)
+        logBuilder.append(logLine)
+        runOnUiThread {
+            logTextView.text = logBuilder.toString()
+            scrollView.post { scrollView.fullScroll(ScrollView.FOCUS_DOWN) }
+        }
+    }
+
+    private fun clearLog() {
+        logBuilder.clear()
+        logTextView.text = ""
+    }
+
+    private fun test2ArgFromActivity() {
+        log("--- TEST: 2-arg TTS from Activity ---")
+        activityTts2Arg?.shutdown()
+        activityTts2Arg = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                Log.d(TAG, "TTS initialized successfully with app context")
-                statusText.text = "✅ App Context: TTS Ready"
-                tts?.language = Locale.getDefault()
-                speak("TTS works with app context")
+                log("SUCCESS: 2-arg TTS initialized")
+                speakTest(activityTts2Arg, "2-arg Activity test")
             } else {
-                Log.e(TAG, "TTS initialization failed with app context, status=$status")
-                statusText.text = "❌ App Context: TTS Failed (status=$status)"
+                log("FAILED: 2-arg TTS init status: $status")
             }
         }
     }
 
-    /**
-     * Test 2: Using Activity Context. The result is handled in the overridden onInit.
-     */
-    private fun testTtsWithActivityContext() {
-        statusText.text = "Testing: Activity Context TTS Init..."
-        // Ensure any previous instance is shut down
-        tts?.shutdown()
-        // The 'this' refers to MainActivity, which implements OnInitListener
-        tts = TextToSpeech(this, this)
+    private fun test3ArgFromActivityWithIvona() {
+        log("--- TEST: 3-arg TTS with Ivona from Activity ---")
+        val ivonaPackage = "ivona.tts"
+        activityTts3Arg?.shutdown()
+        activityTts3Arg = TextToSpeech(this, { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                log("SUCCESS: 3-arg TTS (Ivona) initialized")
+                speakTest(activityTts3Arg, "3-arg Ivona Activity test")
+            } else {
+                log("FAILED: 3-arg TTS (Ivona) init status: $status")
+            }
+        }, ivonaPackage)
     }
 
-    /**
-     * The callback for when TTS is initialized.
-     * This method will be called for the Activity context initialization.
-     */
-    override fun onInit(status: Int) {
-        if (status == TextToSpeech.SUCCESS) {
-            Log.d(TAG, "onInit callback: TTS initialized successfully")
-            statusText.text = "✅ Activity Context: TTS Ready"
-            tts?.let {
-                it.language = Locale.getDefault()
-                Log.d(TAG, "TTS language set to: ${it.language}")
-                // Speak right after initialization
-                speak("TTS works with activity context")
-            }
-        } else {
-            Log.e(TAG, "onInit callback: TTS initialization failed with status=$status")
-            statusText.text = "❌ Activity Context: TTS Failed (status=$status)"
+    private fun speakTest(tts: TextToSpeech?, label: String) {
+        tts?.let {
+            val utteranceId = "test_${System.currentTimeMillis()}"
+            it.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                override fun onStart(id: String?) { log("TTS started: $label") }
+                override fun onDone(id: String?) { log("TTS finished: $label") }
+                override fun onError(id: String?) { log("TTS error: $label") }
+            })
+            val result = it.speak("Testing $label", TextToSpeech.QUEUE_FLUSH, null, utteranceId)
+            log("speak() returned: $result")
         }
     }
 
-    /**
-     * A unified function to handle speaking.
-     */
-    private fun speak(text: String) {
-        if (tts == null) {
-            statusText.text = "Error: TTS is not initialized."
-            Log.e(TAG, "speak() called but TTS is null.")
+    private fun checkNotificationListenerPermission() {
+        val componentName = ComponentName(this, TestNotificationService::class.java)
+        val enabledListeners = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
+        val isEnabled = enabledListeners?.contains(componentName.flattenToString()) == true
+        log("NotificationListener enabled: $isEnabled")
+    }
+
+    private fun openNotificationListenerSettings() {
+        startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+    }
+
+    private fun triggerServiceTest(testType: String) {
+        val componentName = ComponentName(this, TestNotificationService::class.java)
+        val enabledListeners = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
+        if (enabledListeners?.contains(componentName.flattenToString()) != true) {
+            log("ERROR: Permission not granted")
             return
         }
-        val result = tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
-        if (result == TextToSpeech.ERROR) {
-            Log.e(TAG, "Error while trying to speak.")
-            statusText.text = "Error speaking."
-        } else {
-            Log.d(TAG, "Successfully queued speech.")
+
+        getSharedPreferences("debug_prefs", Context.MODE_PRIVATE)
+            .edit()
+            .putString("pending_test", testType)
+            .apply()
+
+        sendTestNotification()
+    }
+
+    private fun sendTestNotification() {
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("TTS Test")
+            .setContentText("Triggering service...")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+
+        val manager = getSystemService(NotificationManager::class.java)
+        manager.notify(NOTIFICATION_ID, notification)
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(CHANNEL_ID, "Debug", NotificationManager.IMPORTANCE_HIGH)
+            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+        }
+    }
+
+    private fun listAllTtsEngines() {
+        log("--- Listing All TTS Engines ---")
+        
+        // FIX: Use a temporary variable and assign it to a var so it can be 
+        // referenced inside the lambda listener correctly.
+        var tempTts: TextToSpeech? = null
+        tempTts = TextToSpeech(this) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                // Now tempTts is accessible here
+                val engines = tempTts?.engines
+                engines?.forEach { engine ->
+                    log("  Engine: ${engine.label} (${engine.name})")
+                }
+                tempTts?.shutdown()
+            }
         }
     }
 
     override fun onDestroy() {
-        // Shutdown TTS when the activity is destroyed
-        Log.d(TAG, "onDestroy: Shutting down TTS")
-        tts?.stop()
-        tts?.shutdown()
         super.onDestroy()
+        activityTts2Arg?.shutdown()
+        activityTts3Arg?.shutdown()
     }
 }
